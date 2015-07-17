@@ -1,0 +1,72 @@
+Features and miscellanea:
+ - smarter creation of log files and directories
+ - write a manual?
+    - related but different: manpages
+ - MXP? May be too heavyweight to do nicely and keep the core small.
+ - rename Metaline.insert to insert_after, and add a new method called 
+   insert_before.
+ - have something line instance_macro.
+ - should TriggerMatchingRealm get send_after?
+ - more complex logging of errors than going to stdout. Pop up a dialogue box,
+   and write to the logfile?
+    - if this gets done, then realm.console should also do something similar
+ - double-check that what comes in through dataReceived, the gui, etc, is
+   converted to unicode, and is properly encoded at all times. The logfile
+   may be writing fine, and it's the display, or there may be some confusion
+   going on.
+ - unicode (\U and \u) escapes in escape_parser.py
+ - multiline triggers
+ - EOR, ttypes, LINEMODE
+ - a wizard to create a main module, plus a way to run them without the 
+   command line.
+ - alternative tab completion, for when you don't just want the most recent
+   word seen. (NB: the Trie data structure loses information; imagine if
+   foobar, foospam, foobaz were entered - we don't know if foospam or foobar
+   came first)
+
+Screen related:
+ - search facility in the output
+    - this might be done better by making it easy to open the HTML log and to
+      keep it fresh. On the other hand, web browsers can be a memory hog and
+      we're keeping the history around anyway...
+ - or, even better than pausing: screen splitting
+   - or, new window opening?
+ - proper tooltip-based line arrival time - I know this can be done somehow
+
+Test related:
+ - Tests that need writing:
+    - output_manager.py, gui/*gui.py
+    - The realms has imperfect test coverage right now
+    - TelnetClient has untested parts
+    - most stuff under library/
+    - LineAlterer needs some
+    - the GTK-specific bits of gui/keychords.py
+ - write a few integration tests
+
+Other refactorings:
+ - customisation! Make the split char customisable, make the font 
+   customisable; these are only the tip of the iceberg. Echoing toggling?
+   Look through the code for hardcoded strings, etc.
+ - separate the different layers (MCCP, Telnet, Matching, Output-Managing, 
+   Outputs) more cleanly into Protocols, etc; ie, drink some more of the 
+   Twisted koolaid.
+    - largely a matter of naming now, and breaking up RootReam as needed
+ - make an abstract GUI interface, allowing for some other implementations 
+   This is kind of half done informally, but half not.
+ - split the module handling bit away from RootRealm
+
+Specific modules under library/:
+  - write:
+    - the Big Bad Combat System
+    - automapper
+  - targetting.py wants multiple targets and target switching added.
+  - colourtells.py:
+     - should also colour TELLS and SHOWTELL.
+     - should have a SHOWTELLCOLOURS alias
+  - autosipper.py: 
+     - make it less trusting and add timeouts.
+     - support for priest-mode (make mana sipping a higher priority)?
+  - achaea/curer.py:
+     - timer-based anti-illusion
+     - limb hit tracking
+

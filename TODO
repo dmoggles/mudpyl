@@ -5,7 +5,7 @@ Core
  - GMCP support
  - State support in realms
  - Implement multiple output channel (for things like separate windows with filtered output)
- - Implement proxy mode (mudpyl forwards output to another telnet connection and accepts input from telnet connection, 
+ - Implement proxy mode (pymudclient forwards output to another telnet connection and accepts input from telnet connection, 
    rather than the gui)
  - MXP support (this is very low priority)
  

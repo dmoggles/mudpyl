@@ -5,12 +5,12 @@ import os
 #fortunately, it has barely any code in it. This -should- work under normal
 #conditions, because everything is unzipped anyway for installation.
 edict = {}
-execfile(os.path.join('mudpyl', '__init__.py'), edict)
-setup(name = "mudpyl",
+execfile(os.path.join('pymudclient', '__init__.py'), edict)
+setup(name = "pymudclient",
       version = edict['__version__'],
-      author = 'Sam Pointon',
-      author_email = 'sampointon@gmail.com',
-      url = 'https://launchpad.net/mudpyl/',
+      author = 'Dmitry Mogilevsky',
+      author_email = 'dmitry.mogilevsky@gmail.com',
+      url = 'https://github.com/dmoggles/pymudclient',
       description = "Python MUD client",
       long_description = open("README").read(),
       classifiers = [
@@ -28,5 +28,5 @@ setup(name = "mudpyl",
                         },
       test_suite = 'nose.collector',
       packages = find_packages(),
-      scripts = ['mudpyl/mudconnect.py'],
+      scripts = ['pymudclient/mudconnect.py'],
 )

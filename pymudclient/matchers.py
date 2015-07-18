@@ -58,11 +58,11 @@ class ProtoMatcher(object):
 class _Placeholder(object):
     """Represents a matcher that's actually initialised later."""
 
-    def cls(self, regex, func, sequence):
+    def cls(self, matching_obj, func, sequence):
         raise NotImplemented
 
-    def __init__(self, regex, func, sequence):
-        self.regex = regex
+    def __init__(self, matching_obj, func, sequence):
+        self.matching_obj = matching_obj
         self.func = func
         self.sequence = sequence
 
@@ -87,7 +87,7 @@ class BindingPlaceholder(_Placeholder):
             #pylint doesn't know we dynamically mess with self.cls in child
             #classes
             #pylint: disable-msg= E1111
-            res = self.cls(self.regex, self.func.__get__(instance, owner), 
+            res = self.cls(self.matching_obj, self.func.__get__(instance, owner), 
                            self.sequence)
             #pylint: enable-msg= E1111
             self._catered_for[id(instance)] = res
@@ -99,20 +99,23 @@ class NonbindingPlaceholder(_Placeholder):
     """Wraps up functions as standalone matchers."""
 
     def __call__(self):
-        return self.cls(self.regex, self.func, self.sequence)
+        return self.cls(self.matching_obj, self.func, self.sequence)
 
-def make_decorator(class_, base):
+def make_decorator(class_, base, is_matching_regex):
     """Creates a decorator that does many varied and useful things."""
     class _PlaceholderClass(base):
         #dynamic inheritance and class creation, woo
         cls = class_
 
-    def instance_class(regex, sequence = 0):
+    def instance_class(matching_string, sequence = 0):
         """The actual decorator."""
-        if isinstance(regex, basestring):
-            regex = re.compile(regex)
+        if isinstance(matching_string, basestring):
+            if is_matching_regex:
+                matching_obj = re.compile(matching_string)
+            else:
+                matching_obj = matching_string
         def fngrabber(func):
-            return _PlaceholderClass(regex, func, sequence)
+            return _PlaceholderClass(matching_obj, func, sequence)
         return fngrabber
 
     return instance_class

@@ -19,6 +19,7 @@ class BaseModule(object):
     aliases = []
     macros = {}
     modules = []
+    gmcp_events=[]
     encoding = 'utf-8'
 
     def __init__(self, realm):
@@ -26,6 +27,7 @@ class BaseModule(object):
         self.realm = realm
         realm.triggers.extend(self.triggers)
         realm.aliases.extend(self.aliases)
+        realm.gmcp_events.extend(self.gmcp_events)
         realm.macros.update(self.macros)
 
     def is_main(self):
@@ -36,7 +38,9 @@ class BaseModule(object):
         once in here.
         """
         pass
-
+    def get_gmcp_handler(self):
+        return None
+    
     def __hash__(self):
         return id(self)
 
@@ -49,16 +53,21 @@ class EarlyInitialisingModule(object):
         realm.triggers.extend(self.triggers)
         realm.aliases.extend(self.aliases)
         realm.macros.update(self.macros)
+        realm.gmcp_events(self.gmcp_events)
         return self
 
     def is_main(self):
         """Override me!"""
         pass
-
+    
+    def get_gmcp_handler(self):
+        return None
+    
     macros = {}
     triggers = []
     aliases = []
     modules = []
-
+    gmcp_events=[]
+    
     def __hash__(self):
         return id(self)

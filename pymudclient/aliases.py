@@ -12,8 +12,8 @@ class Alias(ProtoMatcher):
         """Check to see if the line matches against our criteria."""
         return list(re.finditer(self.regex, line))
 
-binding_alias = make_decorator(Alias, BindingPlaceholder)
-non_binding_alias = make_decorator(Alias, NonbindingPlaceholder)
+binding_alias = make_decorator(Alias, BindingPlaceholder,True)
+non_binding_alias = make_decorator(Alias, NonbindingPlaceholder,True)
 
 class AliasMatchingRealm(BaseMatchingRealm):
     """Represents the context that an Alias is matched in.

@@ -18,8 +18,8 @@ class RegexTrigger(ProtoMatcher):
         else:
             return []
 
-binding_trigger = make_decorator(RegexTrigger, BindingPlaceholder)
-non_binding_trigger = make_decorator(RegexTrigger, NonbindingPlaceholder)
+binding_trigger = make_decorator(RegexTrigger, BindingPlaceholder,True)
+non_binding_trigger = make_decorator(RegexTrigger, NonbindingPlaceholder,True)
 
 class LineAlterer(object):
     """Caches the changes made to a Metaline so triggers don't step on each

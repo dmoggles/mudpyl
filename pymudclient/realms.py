@@ -36,6 +36,9 @@ class RootRealm(object):
 
         self.protocols = []
         self._closing_down = False
+        self.gmcp_handler = None
+        self.gmcp_events=[]
+        self.gmcp={}
 
     #Bidirectional, or just ambivalent, functions.
 
@@ -45,6 +48,7 @@ class RootRealm(object):
         #keep in place so references to these still work
         self.triggers[:] = []
         self.aliases[:] = []
+        self.gmcp_events[:]=[]
         self.macros.clear()
         self.macros.update(self.baked_in_macros)
         self.modules_loaded = set()
@@ -72,6 +76,7 @@ class RootRealm(object):
             if _sort:
                 self.triggers.sort()
                 self.aliases.sort()
+                self.gmcp_events.sort()
         except:
             self.modules_loaded.remove(cls)
             raise
@@ -154,6 +159,12 @@ class RootRealm(object):
             return False
 
     #Going towards the screen
+
+    def gmcpReceived(self, gmcp_pair):
+        """Take GMCP data and do something with it"""
+        """TODO: Again, could be made more like aliases and triggers"""
+        for gmcp_event in self.gmcp_events:
+            gmcp_event(gmcp_pair, self)
 
     def metalineReceived(self, metaline):
         """Match a line against the triggers and perhaps display it on screen.
@@ -239,4 +250,4 @@ class RootRealm(object):
         realm = AliasMatchingRealm(line, echo, parent = self, root = self,
                                    send_line_to_mud = self.telnet.sendLine)
         realm.process()
-
+    

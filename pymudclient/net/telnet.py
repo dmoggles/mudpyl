@@ -1,11 +1,12 @@
 """The actual connection to the MUD."""
-from twisted.conch.telnet import Telnet, GA, IAC, ECHO
+from twisted.conch.telnet import Telnet, GA, IAC, ECHO, WILL
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import ClientFactory
 from pymudclient.net.nvt import ColourCodeParser, make_string_sane
 from pymudclient.net.mccp import MCCPTransport, COMPRESS2
 from pymudclient.realms import RootRealm
 import re
+from pymudclient.net.gmcp import GMCP
 
 broken_line_ending_pattern = re.compile("([^\r]|^)\n\r")
 
@@ -22,11 +23,22 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         Telnet.__init__(self)
         self.commandMap[GA] = self.ga_received
         self.negotiationMap[COMPRESS2] = self.turn_on_compression
+        self.negotiationMap[GMCP] = self.handle_gmcp
         #LineOnlyReceiver doesn't have an __init__ method, weirdly.
         self.factory = factory
         self.allowing_compress = False
         self._colourparser = ColourCodeParser()
         self.fix_broken_godwars_line_endings = True
+
+    def negotiate(self, bytes):
+        
+        command, bytes = bytes[0], bytes[1:]
+        cmdFunc = self.negotiationMap.get(command)
+        if cmdFunc is None:
+            self.unhandledSubnegotiation(command, bytes)
+        else:
+            cmdFunc(bytes)
+
 
     def connectionMade(self):
         """Call our superclasses.
@@ -37,13 +49,25 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         self.factory.realm.connectionMade()
         Telnet.connectionMade(self)
         LineOnlyReceiver.connectionMade(self)
-
+    def commandReceived(self, command, argument):
+        
+        Telnet.commandReceived(self, command, argument)
+        if argument==GMCP and command == WILL and self.factory.realm.gmcp_handler:
+            for msg in self.factory.realm.gmcp_handler.handshakeMessages():
+                self.requestNegotiation(GMCP, msg)
+            
+            
+        
     def enableRemote(self, option):
-        print("enableRemote %s"%option)
         """Allow MCCP to be turned on."""
         if option == COMPRESS2:
             self.allowing_compress = True
             return True
+        if option == GMCP:
+            
+            self.allow_gmcp = True
+            return True
+        
         elif option == ECHO:
             self.factory.realm.server_echo = True
             #hide the command line
@@ -56,6 +80,8 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         """Allow MCCP to be turned off."""
         if option == COMPRESS2:
             self.allowing_compress = False
+        if option == GMCP:
+            self.allow_gmcp = False
         elif option == ECHO:
             self.factory.realm.server_echo = False
             self.factory.gui.command_line.set_visibility(True)
@@ -63,10 +89,16 @@ class TelnetClient(Telnet, LineOnlyReceiver):
     def turn_on_compression(self, bytes):
         """Actually enable MCCP."""
         #invalid states.   
-        print("turn_on_compression")
         if not self.allowing_compress or bytes:
             return
         self.transport.their_mccp_active = True
+        
+    def handle_gmcp(self, bytes):
+        if self.allow_gmcp == True and self.factory.realm.gmcp_handler:
+            self.factory.realm.gmcp_handler.process(bytes,self.factory.realm)
+        
+    def unhandledSubnegotiation(self, command, bytes):
+        print("Unhandled subnegotiation %d"%ord(command))
 
     def dataReceived(self, data):
         if self.fix_broken_godwars_line_endings:
@@ -134,7 +166,7 @@ class TelnetClientFactory(ClientFactory):
         self.encoding = encoding
         self.main_module_name = main_module_name
         self.realm = RootRealm(self)
-
+        
     protocol = TelnetClient
 
     def buildProtocol(self, addr):

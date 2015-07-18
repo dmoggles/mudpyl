@@ -59,7 +59,8 @@ class CommandView(gtk.Entry):
     def submit_line(self):
         """Send the current line to the MUD and clear the buffer."""
         text = self.get_all_text()
-        self.set_text('')
+        #self.set_text('')
+        self.select_region(0,-1)
         self.realm.receive_gui_line(text)
         if not self.realm.server_echo:
             self.hist.add_command(text)

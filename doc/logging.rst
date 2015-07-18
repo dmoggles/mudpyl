@@ -2,13 +2,13 @@
 Logging to HTML files
 ==============================
 
-Logging your MUDding sessions is really easy in mudpyl. A module has already
+Logging your MUDding sessions is really easy in pymudclient. A module has already
 been written that does the hard work of generating HTML: ``library/html.py``
 is its name.
 
-To use it, first import the mudpyl module that handles all the messy stuff::
+To use it, first import the pymudclient module that handles all the messy stuff::
 
-    from mudpyl.library.html import HTMLLoggingModule
+    from pymudclient.library.html import HTMLLoggingModule
 
 Now, to use this, inherit your ``MainModule`` from ``HTMLLoggingModule``,
 instead of from ``BaseModule``. By default, this dumps logs into 

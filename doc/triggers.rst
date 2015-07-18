@@ -6,7 +6,7 @@ Triggers are the primary way that your program will receive information from
 the MUD. Fundamentally, they are very simple: a trigger has two methods:
 ``match`` and ``__call__``, and one attribute, ``sequence``.
 
-mudpyl provides a class, ``RegexTrigger``, that provides most of the plumbing 
+pymudclient provides a class, ``RegexTrigger``, that provides most of the plumbing 
 that's needed, as well as a few other classes and functions to make life 
 simpler.
 

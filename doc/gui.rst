@@ -1,8 +1,8 @@
 =====================================
-Using mudpyl's GUI
+Using pymudclient GUI
 =====================================
 
-mudpyl has a GUI written in PyGTK. There was originally a GUI written in
+pymudclient has a GUI written in PyGTK. There was originally a GUI written in
 wxPython, but wx didn't provide as useful a text widget as GTK, so the switch
 was made.
 
@@ -24,7 +24,7 @@ Also, the default GUI may be explicitly specified, like so::
 The keybindings
 ===============
 
-mudpyl has a number of default keybindings, in addition to those the toolkit
+pymudclient has a number of default keybindings, in addition to those the toolkit
 provides by default. These are found in ``gui/bindings.py``. They are loaded
 by default, so unless you want to change them, their loading can be ignored. 
 They are:

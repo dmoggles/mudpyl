@@ -6,6 +6,7 @@ from pymudclient.gui.keychords import from_string
 from datetime import datetime, timedelta
 import traceback
 import gtk
+from Tkinter import Tk
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -52,6 +53,7 @@ class GUI(gtk.Window):
         self.paused_label = gtk.Label()
         self.time_online = TimeOnlineLabel()
         self._make_widget_body()
+        self.clipboard = gtk.Clipboard(selection='PRIMARY')
 
     def connectionMade(self):
         self.time_online.start_counting()
@@ -141,12 +143,30 @@ class GUI(gtk.Window):
         command to the output window.
 
         This is needed so that focus can always stay on the command line.
+        
+        --dm 
+        
+        I had to rework this as the text wasn't hitting the system clipboard
         """
+        print("Attempted to Copy")
         if self.command_line.get_selection_bounds():
             #let the command window handle if it's got the selection
-            return True
+            start_char, end_char = self.command_line.get_selection_bounds()
+            copy_text = self.command_line.get_all_text()[start_char:end_char]
+            copy_helper(copy_text)
         else:
-            self.output_window.emit("copy-clipboard")
+            copy_text = self.clipboard.wait_for_text()
+            if copy_text != None:
+                copy_helper(copy_text)
+
+
+def copy_helper(text):
+    '''I have no idea what I'm doing here, but it seems to work ¯\_(ツ)_/¯'''
+    r = Tk()
+    r.withdraw()
+    r.clipboard_clear()
+    r.clipboard_append(text)
+    r.destroy()
 
 def configure(factory):
     """Set the right reactor up and get the GUI going."""

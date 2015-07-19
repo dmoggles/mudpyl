@@ -15,7 +15,6 @@ Engine
 
  
 GUI
- - get copy and paste outside the application working
  - Add support for more flexible UI implementation - possibly using Glade. This requires separating UI from data a little bit more
    and creating an actual middle layer GUI API
  - Make style customizable (font is too small right now, etc)

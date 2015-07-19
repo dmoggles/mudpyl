@@ -6,10 +6,11 @@ Created on Jul 16, 2015
 from twisted.internet.protocol import Protocol
 import json
 import re
+import pymudclient
 
 
 GMCP = chr(201)
-GMCP_HANDSHAKE_1='Core.Hello { "client": "mudpyl", "version": "0.14" }'
+GMCP_HANDSHAKE_1='Core.Hello { "client": "pymudclient", "version": "'+ pymudclient.__version__ +'" }'
 GMCP_HANDSHAKE_2='Core.Supports.Set [ "Core 1", "Char 1", "Char.Name 1", "Char.Skills 1", "Char.Items 1", "Comm.Channel 1", "Redirect 1", "Room 1", "IRE.Rift 1", "IRE.Composer 1" ]'
 GMCP_PING='Core.Ping'
 
@@ -32,8 +33,9 @@ class ImperianGmcpHandler:
             
             message_type = result.group(1)
             message_data = result.group(2)
-            realm.gmcp[message_type]=message_data
             gmcp_data = json.loads(message_data)
+            realm.gmcp[message_type]=gmcp_data
+            
             realm.gmcpReceived((message_type, gmcp_data))
                     
             
@@ -53,7 +55,7 @@ class ImperianGmcpHandler:
         else:
             return ''
         
-        return create_string(root,2)
+        return json.dumps(root,indent=2, separators=(',',':'), sort_keys=True)
     
 def create_string(data,indent, base_indent=0):
     '''TODO: The output doesn't handle nesting THAT well.  Fix it'''

@@ -2,7 +2,6 @@ Meta
  - Update README with appropriate ownership/license/etc information
  
 Core 
- - GMCP support
  - State support in realms
  - Implement multiple output channel (for things like separate windows with filtered output)
  - Implement proxy mode (pymudclient forwards output to another telnet connection and accepts input from telnet connection, 

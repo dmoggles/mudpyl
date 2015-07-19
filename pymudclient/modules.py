@@ -22,15 +22,14 @@ class BaseModule(object):
     gmcp_events=[]
     encoding = 'utf-8'
 
-    def __init__(self, realm):
-        super(BaseModule, self).__init__()
-        self.realm = realm
-        realm.triggers.extend(self.triggers)
-        realm.aliases.extend(self.aliases)
-        realm.gmcp_events.extend(self.gmcp_events)
-        realm.macros.update(self.macros)
+    def __init__(self, manager):
+        self.manager = manager
+        manager.triggers.extend(self.triggers)
+        manager.aliases.extend(self.aliases)
+        manager.macros.update(self.macros)
+        manager.gmcp_events.extend(self.gmcp_events)
 
-    def is_main(self):
+    def is_main(self, realm):
         """We're the main module; do funky main module initialisation.
         
         This function will only be called once per session, by connect.py, so
@@ -48,15 +47,15 @@ class EarlyInitialisingModule(object):
     """A module that needs to be initialised in __init__ before it is loaded.
     """
     
-    def __call__(self, realm):
-        self.realm = realm
-        realm.triggers.extend(self.triggers)
-        realm.aliases.extend(self.aliases)
-        realm.macros.update(self.macros)
-        realm.gmcp_events(self.gmcp_events)
+    def __call__(self, manager):
+        self.manager = manager
+        manager.triggers.extend(self.triggers)
+        manager.aliases.extend(self.aliases)
+        manager.macros.update(self.macros)
+        manager.gmcp_events.extend(self.gmcp_events)
         return self
 
-    def is_main(self):
+    def is_main(self, realm):
         """Override me!"""
         pass
     
@@ -68,6 +67,7 @@ class EarlyInitialisingModule(object):
     aliases = []
     modules = []
     gmcp_events=[]
-    
+    encoding = "utf-8"
+
     def __hash__(self):
         return id(self)

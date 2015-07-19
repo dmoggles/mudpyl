@@ -35,8 +35,7 @@ class GmcpEvent:
         except Exception: #don't catch KeyboardInterrupt etc
             traceback.print_exc()
 
-    def __cmp__(self, other):
-        return cmp(self.sequence, other.sequence)
+    
 
     def __str__(self):
         args = [type(self).__name__]

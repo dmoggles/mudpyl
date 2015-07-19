@@ -1,6 +1,6 @@
 """Some general helpful stuff."""
-from mudpyl.aliases import non_binding_alias
-from mudpyl.gui.keychords import from_string
+from pymudclient.aliases import non_binding_alias
+from pymudclient.gui.keychords import from_string
 
 #pylint doesn't like that func is set in __init__ too, if the conditions are
 #right. Also, the unused arguments are harmless.

@@ -4,9 +4,6 @@ from pymudclient.aliases import binding_alias
 
 gui_macros = {}
 
-
-gui_aliases=[]
-    
 def enter_pressed(realm):
     """Submit the line to the realm."""
     realm.factory.gui.command_line.submit_line()

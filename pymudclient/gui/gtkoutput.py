@@ -2,6 +2,8 @@
 from itertools import izip, chain
 import gtk
 import pango
+from pymudclient.metaline import RunLengthList
+from datetime import datetime
 
 class OutputView(gtk.TextView):
 
@@ -19,7 +21,10 @@ class OutputView(gtk.TextView):
         self.end_mark = self.buffer.create_mark('end_mark', 
                                                 self.buffer.get_end_iter(), 
                                                 False)
+        self.timestamps = RunLengthList({})
         self.connect('focus-in-event', self.got_focus_cb)
+        self.set_property("has-tooltip", True)
+        self.connect("query-tooltip", self.display_tooltip_cb)
 
         self.set_editable(False)
         self.set_cursor_visible(False)
@@ -33,6 +38,24 @@ class OutputView(gtk.TextView):
         all incoming keypresses that we're interested in.
         """
         self.gui.command_line.grab_focus()
+
+    def display_tooltip_cb(self, widget, wx, wy, keyboard_mode, tooltip):
+        """Display a timestamp for the line the user hovers over."""
+        #XXX: I'm not sure this is converting between coordinates right, I
+        #need to double-check the GTK docs.
+        bx, by = self.window_to_buffer_coords(gtk.TEXT_WINDOW_WIDGET, wx, wy)
+        textiter = self.get_iter_at_location(bx, by)
+        #GTK is very keen for the above code to succeed, but really it's only
+        #useful for us if there's a tooltip above a bit of text, as opposed
+        #to the ENTIRE FREAKING WIDGET. So test to see if bx and by can
+        #roundtrip in the character's pixel rectangle
+        rect = self.get_iter_location(textiter)
+        if not 0 <= bx - rect.x <= rect.width or \
+           not 0 <= by - rect.y <= rect.height:
+            return False
+        received_at = self.timestamps.get_at(textiter.get_offset())
+        tooltip.set_text(received_at.strftime("Received at: %H:%M:%S"))
+        return True
 
     def pause(self):
         """Stop autoscrolling to new data."""
@@ -58,8 +81,9 @@ class OutputView(gtk.TextView):
         This will autoscroll to the end if we are not paused.
         """
         bytes = metaline.line.encode('utf-8')
-        offset = self.buffer.get_char_count()
-        self.buffer.insert(self.buffer.get_end_iter(), bytes)
+        end_iter = self.buffer.get_end_iter()
+        offset = end_iter.get_offset()
+        self.buffer.insert(end_iter, bytes)
         self.apply_colours(metaline.fores, offset, len(metaline.line))
         self.apply_colours(metaline.backs, offset, len(metaline.line))
         if not self.paused:
@@ -68,16 +92,17 @@ class OutputView(gtk.TextView):
             self.gui.paused_label.set_markup("<span foreground='#FFFFFF' "
                                                    "background='#000000'>"
                                                "MORE - PAUSED</span>")
+        #this is a bit naughty, we're bypassing the RLL's safety thingies
+        #anyway, we need to store the offset that -begins- the chunk of text
+        self.timestamps[offset] = datetime.now()
 
     def apply_colours(self, colours, offset, end_offset):
         """Apply a RunLengthList of colours to the buffer, starting at
         offset characters in.
         """
         end_iter = self.buffer.get_iter_at_offset(offset)
-        for colour, end in izip(colours.itervalues(),
+        for tag, end in zip(map(self.fetch_tag, colours.values()),
                                 colours.keys()[1:] + [end_offset]):
-            #TODO: try this with the recreating iter approach
-            tag = self.fetch_tag(colour)
             start_iter = end_iter
             end_iter = self.buffer.get_iter_at_offset(end + offset)
             self.buffer.apply_tag(tag, start_iter, end_iter)

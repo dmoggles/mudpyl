@@ -37,7 +37,7 @@ def main():
 
     modinstance = factory.realm.load_module(modclass)
     factory.realm.gmcp_handler = modinstance
-    modinstance.is_main()
+    modinstance.is_main(factory.realm)
 
     from twisted.internet import reactor
 

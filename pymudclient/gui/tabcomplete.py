@@ -1,9 +1,27 @@
 """Utilities for implementing tab-completion.
 """
-from ordereddict import OrderedDict
 import re
 
-class Trie(OrderedDict):
+class _ordereddict(dict):
+
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self._key_order = []
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        if key in self._key_order:
+            self._key_order.remove(key)
+        self._key_order.append(key)
+        
+    #only implement the bits we really need sorted
+    def __iter__(self):
+        return iter(self._key_order)
+
+    def keys(self):
+        return self._key_order[:]
+
+class Trie(_ordereddict):
     """A tree of dictionaries, representing a set of strings sorted by prefix
     """
 
@@ -15,13 +33,6 @@ class Trie(OrderedDict):
                                                   for c in splitting_chars))
 
     #pylint: enable-msg= E0602
-
-    #pylint is also not very good at picking up methods of classes defined
-    #in C; also, we only call protected methods on our own classes
-    #pylint: disable-msg= E1101,W0212
-
-    def __init__(self, *args, **kwargs):
-        OrderedDict.__init__(self, kvio = True, *args, **kwargs)
 
     def _fetch(self, key, extend = False):
         """Retrieve a string based on a prefix."""
@@ -91,8 +102,9 @@ class Trie(OrderedDict):
                           if c in line[ind:])
         except ValueError: #none in the line beyond the index
             wordend = len(line)
+        oldword_raw = line[wordstart:wordend]
         #all our keys are lowercase. Ditto values.
-        oldword = line[wordstart:wordend].lower()
+        oldword = oldword_raw.lower()
         try:
             newword = self._fetch(oldword)
             if newword == oldword:
@@ -102,8 +114,10 @@ class Trie(OrderedDict):
             pass
         else:
             #try and preserve the user's capitalisation.
-            if line[wordstart].isupper():
-                newword = newword.capitalize()
+            if len(oldword_raw) > 1 and oldword_raw.isupper():
+                newword = newword.upper()
+            else:
+                newword = oldword_raw + newword[len(oldword):]
             line = line[:wordstart] + newword + line[wordend:]
             #cursor is now at the end of the new word. We must minus one, 
             #because len(newword) points us to the end, which is to the right 

@@ -14,6 +14,7 @@ gui_help = ("The GUI to use. Available options: %s. Default: %%(default)s" %
 
 parser.add_argument('-g', '--gui', default = 'gtk', help = gui_help,
                     choices = known_guis)
+parser.add_argument('-d','--directory', help="Module directory", dest='module_directory', default="",type=str)
 parser.add_argument("modulename", help = "The module to import")
 parser.add_argument("--profile", action = "store_true",  default = False,
                     help = "Whether to profile exection. Default: False")
@@ -24,11 +25,20 @@ def main():
     This is the main entry point. This will first initialise the GUI, then
     load the main module specified on the command line.
     """
+    
     options = parser.parse_args()
-
+    if options.module_directory != "":
+        directory = options.module_directory
+        import sys
+        sys.path.append(directory)
+    if options.gui == 'gtk':
+        from twisted.internet import gtk2reactor
+        gtk2reactor.install()
+    
+    from twisted.internet import reactor    
     modclass = load_file(options.modulename)
     factory = TelnetClientFactory(modclass.name, modclass.encoding, 
-                                  options.modulename)
+                                  options.modulename, reactor)
 
     if options.gui == 'gtk':
         from pymudclient.gui.gtkgui import configure

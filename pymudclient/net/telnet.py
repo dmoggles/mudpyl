@@ -160,11 +160,12 @@ class TelnetClientFactory(ClientFactory):
 
     """A ClientFactory that produces TelnetClients."""
 
-    def __init__(self, name, encoding, main_module_name):
+    def __init__(self, name, encoding, main_module_name, reactor):
         #no __init__ here, either.
         self.name = name
         self.encoding = encoding
         self.main_module_name = main_module_name
+        self.reactor = reactor
         self.realm = RootRealm(self)
         
     protocol = TelnetClient

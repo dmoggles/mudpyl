@@ -170,8 +170,6 @@ def copy_helper(text):
 
 def configure(factory):
     """Set the right reactor up and get the GUI going."""
-    from twisted.internet import gtk2reactor
-    gtk2reactor.install()
     gui = GUI(factory.realm)
     macros = {from_string("<page up>"): gui.forward_page_up_cb,
               from_string('<page down>'): gui.forward_page_down_cb,

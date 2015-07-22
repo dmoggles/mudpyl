@@ -244,3 +244,7 @@ class RootRealm(object):
                                    send_line_to_mud = self.telnet.sendLine)
         realm.process()
     
+    def set_timer(self, seconds, f, realm):
+        return self.factory.reactor.callLater(seconds, f, realm)
+    
+

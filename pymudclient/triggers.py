@@ -14,7 +14,14 @@ class RegexTrigger(ProtoMatcher):
     def match(self, metaline):
         """Test to see if the trigger's regex matches."""
         if self.regex is not None:
-            return re.finditer(self.regex, metaline.line)
+            if isinstance(self.regex, list):
+                for r in self.regex:
+                    if re.match(r, metaline.line):
+                        return re.finditer(r, metaline.line)
+                
+                return []
+            else:
+                return re.finditer(self.regex, metaline.line)
         else:
             return []
 

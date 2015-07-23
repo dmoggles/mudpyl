@@ -117,6 +117,8 @@ def make_decorator(class_, base, is_matching_regex):
                 matching_obj = re.compile(matching_string)
             else:
                 matching_obj = matching_string
+        elif isinstance(matching_string, list):
+            matching_obj=[re.compile(m) for m in matching_string]
         def fngrabber(func):
             return _PlaceholderClass(matching_obj, func, sequence)
         return fngrabber

@@ -1,6 +1,11 @@
-from pymudclient.triggers import LineAlterer
+from pymudclient.triggers import LineAlterer, binding_trigger
 from pymudclient.metaline import Metaline, RunLengthList, simpleml
 from pymudclient.colours import HexFGCode, CYAN, WHITE, RED, fg_code
+
+import unittest
+from pymudclient.modules import BaseModule
+from pymudclient.realms import RootRealm
+from mock import Mock
 from mock import sentinel
 
 class Test_LineAlterer:
@@ -199,4 +204,41 @@ def test_returns_nothing_if_regex_is_None():
     res = list(f().match(Metaline('foobar', None, None)))
     assert not res
 
+
+class TestModule(BaseModule):
+    
+    @property
+    def triggers(self):
+        return [self.testTrigger, self.testTrigger2]
+    
+    @binding_trigger('abc')
+    def testTrigger(self, match, realm):
+        realm.write("success")
+            
+
+    @binding_trigger(['def','hig'])
+    def testTrigger2(self, match,realm):
+        realm.write("success2")
+
+class TestTriggers(unittest.TestCase):
+    def setUp(self):
+        self.realm=RootRealm(None)
+        self.realm.load_module(TestModule, True)
+        self.realm.telnet = Mock()
+        self.protocol = Mock()
+        self.realm.addProtocol(self.protocol)
+    
+    @property
+    def lines_gotten(self):
+        return [line for ((line,), kwargs) in 
+                    self.protocol.metalineReceived.call_args_list]
+    def test_simple_trigger(self):
+        self.realm.metalineReceived(simpleml('abc', None, None))
+        return_line = self.lines_gotten[1].line
+        assert self.lines_gotten[1].line == '\nsuccess'
+        
+    def test_list_trigger(self):
+        self.realm.metalineReceived(simpleml('highjump', None, None))
+        return_line = self.lines_gotten[1].line
+        assert return_line=='\nsuccess2'
 #XXX: not tested - binding_triggers

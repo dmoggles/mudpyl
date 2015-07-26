@@ -46,7 +46,7 @@ def taggedml(line, default_fg=WHITE, default_bg=BLACK):
             bg.add_change(m_idx-tag_length, bg_code(bg_color))
         
         
-        index=line.find(m)+len(m)
+        index=line.find(m,index)+len(m)
         tag_length+=len(m)
         
     new_line=new_line+line[index:]    

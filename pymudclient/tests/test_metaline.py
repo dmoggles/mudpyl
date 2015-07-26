@@ -1,5 +1,5 @@
 from pymudclient.metaline import Metaline
-
+import unittest
 def test_Metaline_change_fg_sets_colour():
     m = Metaline('foo', RunLengthList([(0, None)]), None)
     m.change_fore(0, 5, 'foo')
@@ -319,3 +319,13 @@ class Testwrap_line:
         ml = self.ml("foobarbazqux")
         ml.wrap = False
         assert ml.wrapped(self.wrapper) == ml
+
+
+class TestTaggedML(unittest.TestCase):
+    
+    def test_tagged_ml(self):
+        from pymudclient.tagged_ml_parser import taggedml
+        weapon_name='battleaxe'
+        weapon_number='123'
+        ml=taggedml('Weapon <red*>%s<white> set to <red*>%s'%(weapon_name,weapon_number))
+        print(ml.line)

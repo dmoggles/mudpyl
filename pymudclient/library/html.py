@@ -42,8 +42,11 @@ body {
         self.realm = realm
         self._dirty = False
         realm.addProtocol(self)
+        logname=time.strftime(logformat)%{'name':self.realm.factory.name}
+        if not os.path.exists(os.path.dirname(logname)):
+            os.makedirs(os.path.dirname(logname))
         self.log = open(time.strftime(logformat) % 
-                                   {'name': self.realm.factory.name}, 'a')
+                                   {'name': self.realm.factory.name}, 'w+')
         self.log.write(self.log_preamble)
 
     def write_out_span(self, span):
@@ -57,8 +60,8 @@ body {
         anyway with both foreground and background, so use common code for
         both types of change.
         """
-        self.log.write(self.colour_change % (self.fore.tohex(), 
-                                             self.back.tohex()))
+        self.log.write(self.colour_change % (self.fore.as_hex, 
+                                             self.back.as_hex))
         self._dirty = False
 
     def close(self):
@@ -111,11 +114,12 @@ class HTMLLoggingModule(BaseModule):
     """A module that logs to disk."""
 
     #defaultly log to a file in ~/logs/
+    
     logplace = os.path.join(os.path.expanduser('~'), 'logs',
-                            '%%(name)s/Date %Y %m %d Time %H %M %S.html')
+                            '%%(name)s/log_%Y_%m_%d__%H_%M_%S.html')
 
-    def is_main(self):
+    def is_main(self, realm):
         """Open up the HTML log."""
         #automatically adds itself to the outputs list
-        HTMLLogOutput(self.realm, self.logplace)
+        HTMLLogOutput(realm, self.logplace)
 

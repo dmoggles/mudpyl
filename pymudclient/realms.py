@@ -19,6 +19,7 @@ class RootRealm(object):
 
     def __init__(self, factory):
         self.factory = factory
+        self.root=self
         self.telnet = None
         self.triggers = []
         self.aliases = []
@@ -39,7 +40,8 @@ class RootRealm(object):
         self.gmcp_handler = None
         self.gmcp_events=[]
         self.gmcp={}
-
+        self.state={}
+        self.module_settings_dir=''
     #Bidirectional, or just ambivalent, functions.
 
     def clear_modules(self):

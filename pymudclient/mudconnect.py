@@ -15,6 +15,7 @@ gui_help = ("The GUI to use. Available options: %s. Default: %%(default)s" %
 parser.add_argument('-g', '--gui', default = 'gtk', help = gui_help,
                     choices = known_guis)
 parser.add_argument('-d','--directory', help="Module directory", dest='module_directory', default="",type=str)
+parser.add_argument('-s','--settings', help='Settings directory', dest='settings_directory',default='',type=str)
 parser.add_argument("modulename", help = "The module to import")
 parser.add_argument("--profile", action = "store_true",  default = False,
                     help = "Whether to profile exection. Default: False")
@@ -44,9 +45,10 @@ def main():
         from pymudclient.gui.gtkgui import configure
 
     configure(factory)
-
+    
     modinstance = factory.realm.load_module(modclass)
     factory.realm.gmcp_handler = modinstance
+    factory.realm.module_settings_dir=options.settings_directory
     modinstance.is_main(factory.realm)
 
     from twisted.internet import reactor

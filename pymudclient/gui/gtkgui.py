@@ -37,6 +37,22 @@ class TimeOnlineLabel(gtk.Label):
         delta = timedelta(delta.days, delta.seconds)
         self.set_text('Time online: %s' % delta)
 
+class updater:
+    def __init__(self, gui):
+        self.gui=gui
+        self.looping_call = LoopingCall(self.update_gui_elements)
+        self.looping_call.start(0.1)
+    
+    def update_gui_elements(self):
+        for k in self.gui.updatable_elements:
+            if k in self.gui.realm.state:
+                value=self.gui.realm.state[k]
+            else:
+                value=''
+            format_text,element=self.gui.updatable_elements[k]
+            element.set_text(format_text%value)
+            
+                
 class GUI(gtk.Window):
 
     """The toplevel window. Contains the command line and the output view."""
@@ -52,8 +68,15 @@ class GUI(gtk.Window):
         self.scrolled_in = gtk.ScrolledWindow()
         self.paused_label = gtk.Label()
         self.time_online = TimeOnlineLabel()
-        self._make_widget_body()
         self.clipboard = gtk.Clipboard(selection='PRIMARY')
+        self.target=gtk.Label()
+        
+        self.updatable_elements={'target':('Target: %s',self.target)}
+        
+        self.updater = updater(self)
+        self._make_widget_body()
+        
+        
 
     def connectionMade(self):
         self.time_online.start_counting()
@@ -90,7 +113,7 @@ class GUI(gtk.Window):
         labelbox.pack_end(self.time_online, expand = False)
         labelbox.pack_end(gtk.VSeparator(), expand = False)
         labelbox.pack_end(self.paused_label, expand = False)
-
+        labelbox.pack_start(self.target, expand=False)
         box = gtk.VBox()
 
         box.pack_start(self.scrolled_out)
@@ -156,6 +179,8 @@ class GUI(gtk.Window):
             copy_helper(copy_text)
         else:
             copy_text = self.clipboard.wait_for_text()
+            print("COPY:------------------------------------------\n%s"%copy_text)
+            print("\n-----------------------------------------------------")
             if copy_text != None:
                 copy_helper(copy_text)
 

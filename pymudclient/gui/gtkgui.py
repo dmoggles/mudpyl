@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import traceback
 import gtk
 from Tkinter import Tk
+from pymudclient.gui.gtkguiwidgets import MapView
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -70,7 +71,8 @@ class GUI(gtk.Window):
         self.time_online = TimeOnlineLabel()
         self.clipboard = gtk.Clipboard(selection='PRIMARY')
         self.target=gtk.Label()
-        
+        self.map = MapView()
+        self.map_buffer=[]
         self.updatable_elements={'target':('Target: %s',self.target)}
         
         self.updater = updater(self)
@@ -88,17 +90,23 @@ class GUI(gtk.Window):
         #GTK does all the destruction for us.
         pass
 
-    def metalineReceived(self, metaline):
-        plain_line = metaline.line.replace('\n', '')
-        self.command_line.add_line_to_tabdict(plain_line)
-        self.output_window.show_metaline(metaline)
+    def metalineReceived(self, metaline, channels):
+        if not 'map' in channels and len(self.map_buffer)>0:
+            self.map.writeLines(self.map_buffer)
+            self.map_buffer=[]
+        if len(channels)==0 or 'main' in channels:
+            plain_line = metaline.line.replace('\n', '')
+            self.command_line.add_line_to_tabdict(plain_line)
+            self.output_window.show_metaline(metaline)
+        if 'map' in channels:
+            self.map_buffer.append(metaline)
 
     def _make_widget_body(self):
         """Put it all together."""
         self.set_title("%s - pymudclient" % self.realm.factory.name)
         self.connect('destroy', self.destroy_cb)
         self.maximize() #sic
-
+        outputbox = gtk.HBox()
         #never have hscrollbars normally, always have vscrollbars
         self.scrolled_out.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
         self.scrolled_out.add(self.output_window)
@@ -114,13 +122,20 @@ class GUI(gtk.Window):
         labelbox.pack_end(gtk.VSeparator(), expand = False)
         labelbox.pack_end(self.paused_label, expand = False)
         labelbox.pack_start(self.target, expand=False)
+        
+        widgetbox = gtk.VBox()
+        widgetbox.pack_start(self.map)
         box = gtk.VBox()
 
-        box.pack_start(self.scrolled_out)
+        outputbox.pack_start(self.scrolled_out)
+        outputbox.pack_start(gtk.VSeparator(), expand=False)
+        outputbox.pack_start(widgetbox)
+        box.pack_start(outputbox)
         box.pack_start(gtk.HSeparator(), expand = False)
         box.pack_start(self.scrolled_in, expand = False)
         box.pack_start(labelbox, expand = False)
         self.add(box)
+        self.widgets={'map':self.map}
 
         self.show_all()
 

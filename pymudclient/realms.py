@@ -42,6 +42,8 @@ class RootRealm(object):
         self.gmcp={}
         self.state={}
         self.module_settings_dir=''
+        
+        self.active_channels=['main']
     #Bidirectional, or just ambivalent, functions.
 
     def clear_modules(self):
@@ -206,7 +208,7 @@ class RootRealm(object):
                 metaline.insert(0, '\n')
                 
         for prot in self.protocols:
-            prot.metalineReceived(metaline)
+            prot.metalineReceived(metaline,self.active_channels)
 
         self._last_line_end = metaline.line_end
 

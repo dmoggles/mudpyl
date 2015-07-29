@@ -16,7 +16,7 @@ GMCP_PING='Core.Ping'
 
 
 decoder = re.compile('^([A-Za-z\.]*) (({|\[).*(}|\]))$')
-
+string_decoder = re.compile('^([A-Za-z\.]*) (\"\w+\")$')
 
 
 class ImperianGmcpHandler:
@@ -39,8 +39,13 @@ class ImperianGmcpHandler:
             realm.gmcpReceived((message_type, gmcp_data))
                     
             
-        else:
-            print("Oh OH! %s"%data_string)
+        else: #the payload is just a string
+            result = string_decoder.match(data_string)
+            if not result == None:
+                message_type = result.group(1)
+                message_data = result.group(2)
+                realm.gmcp[message_type]=message_data
+                realm.gmcpReceived((message_type, message_data))
         
         #structure = json.load(''.join(bytes))
         #print(structure)

@@ -45,10 +45,10 @@ def main():
         from pymudclient.gui.gtkgui import configure
 
     configure(factory)
-    
+    factory.realm.module_settings_dir=options.settings_directory
     modinstance = factory.realm.load_module(modclass)
     factory.realm.gmcp_handler = modinstance
-    factory.realm.module_settings_dir=options.settings_directory
+
     modinstance.is_main(factory.realm)
 
     from twisted.internet import reactor

@@ -75,11 +75,13 @@ body {
         pass
     connectionLost = connectionMade
 
-    def metalineReceived(self, metaline):
+    def metalineReceived(self, metaline,channels):
         """Write the line to the logs.
-
+        
         This breaks the string up into coloured chunks, and feeds them to
         the log separately."""
+        if len(channels)>0 and not 'main' in channels:
+            return
         line = metaline.line
         #the indices are relative to the original string, not the previous
         #index, so we need to track what the previous index was to figure out

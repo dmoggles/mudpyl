@@ -242,3 +242,61 @@ class TestTriggers(unittest.TestCase):
         return_line = self.lines_gotten[1].line
         assert return_line=='\nsuccess2'
 #XXX: not tested - binding_triggers
+
+
+class TestPrinter:
+    def metalineReceived(self, ml,channel):
+        print('%s:%s'%(channel, ml.line))
+        
+    def sendLine(self, l):
+        print(l)
+class TestFactory:
+    @property
+    def name(self):
+        return 'Ailish'
+    
+class TestRuneguardTriggers(unittest.TestCase):
+    @property
+    def lines_gotten(self):
+        return [line for ((line,), kwargs) in 
+                    self.protocol.metalineReceived.call_args_list]
+    @property
+    def telnet_lines_gotten(self):
+        return [line for ((line,),kwargs) in
+                    self.realm.telnet.sendLine.call_args_list]
+        
+    def setUp(self):
+        self.realm=RootRealm(None)
+        self.realm.factory=TestFactory()
+        self.realm.module_settings_dir='/home/dmitry/muds/settings'
+        
+        import sys
+        sys.path.append('/home/dmitry/dev/modules')
+        
+        from runeguard import Runeguard
+        #sr = ShieldRez(self.realm)
+        self.realm.load_module(Runeguard)
+        self.realm.telnet = TestPrinter()
+        self.protocol = TestPrinter()
+        self.realm.addProtocol(self.protocol)
+        self.realm.state['target']='Iniar'
+    
+    def test_rune_fired(self):
+        self.realm.state['target']='Emily'
+        self.realm.metalineReceived(simpleml("You concentrate on the sowulu rune on an ink-stained snowy marble tablet, and its searing image suddenly flares on Emily's skin.",None,None))
+        self.realm.receive_gui_line('rv')
+        self.realm.metalineReceived(simpleml("You concentrate on the pithakhan rune on an ink-stained snowy marble tablet, and its searing image suddenly flares on Emily's skin.",None,None))
+        self.realm.receive_gui_line('rv')
+        self.realm.metalineReceived(simpleml("The residual effects of the sowulu rune around Emily fade.",None,None))
+        self.realm.receive_gui_line('rv')
+        
+    def test_rebounding_on(self):
+        self.realm.state['last_command_type']='attack'
+        self.realm.metalineReceived(simpleml('You suddenly perceive the vague outline of an aura of rebounding around Iniar.',None,None))
+        self.realm.state['last_command_type']='raze'
+        self.realm.metalineReceived(simpleml('A shimmering translucent shield forms around Iniar.',None,None))
+        self.realm.metalineReceived(simpleml('The shimmering translucent shield around Iniar fades away.',None,None))
+        self.realm.metalineReceived(simpleml('Iniar\'s aura of weapons rebounding disappears.',None,None))
+        
+        #print([l.line for l in self.lines_gotten])
+        #print([l for l in self.telnet_lines_gotten])

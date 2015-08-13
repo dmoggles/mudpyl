@@ -5,6 +5,8 @@ using decorators around functions.
 """
 import re
 import traceback
+from tagged_ml_parser import taggedml
+
 
 class ProtoMatcher(object):
     """Common code to triggers and aliases.
@@ -139,6 +141,10 @@ class BaseMatchingRealm(object):
         """Write everything we've been waiting to."""
         for noteline, sls in self._writing_after:
             self.parent.write(noteline, sls)
+    
+    def cwrite(self, line, soft_line_start=False):
+        ml=taggedml(line)
+        self.write(ml, soft_line_start)
 
     def write(self, line, soft_line_start = False):
         """Write a line to the screen.

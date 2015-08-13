@@ -7,6 +7,7 @@ from pymudclient.triggers import TriggerMatchingRealm
 from pymudclient.aliases import AliasMatchingRealm
 from pymudclient.modules import load_file
 from pymudclient.gui.bindings import gui_macros
+from pymudclient.tagged_ml_parser import taggedml
 from textwrap import TextWrapper
 from operator import attrgetter
 import traceback
@@ -177,6 +178,10 @@ class RootRealm(object):
                                      send_line_to_mud = self.telnet.sendLine)
         realm.process()
 
+    def cwrite(self, line, soft_line_start=False):
+        ml=taggedml(line)
+        self.write(ml, soft_line_start)
+        
     def write(self, line, soft_line_start = False):
         """Write a line to the screen.
         

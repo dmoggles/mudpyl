@@ -62,15 +62,6 @@ class ImperianGmcpHandler:
         
         return json.dumps(root,indent=2, separators=(',',':'), sort_keys=True)
     
-def create_string(data,indent, base_indent=0):
-    '''TODO: The output doesn't handle nesting THAT well.  Fix it'''
-        
-    if isinstance(data, dict):
-        return "{\n"+ '\n'.join([' '*indent+create_string(i,indent, base_indent)+': '+create_string(data[i],indent+indent,indent) for i in data])+'\n' + base_indent* ' ' +'}'
-    elif isinstance(data, list):
-        return "[\n"+ '\n'.join([' '*indent+create_string(i, indent+indent,indent)+',' for i in data])[:-1] + '\n' + ' '*base_indent + ']'
-    else:
-        return str(data)
                 
 
 

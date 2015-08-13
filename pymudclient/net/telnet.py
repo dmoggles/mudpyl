@@ -104,7 +104,10 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         if self.fix_broken_godwars_line_endings:
             while broken_line_ending_pattern.match(data):
                 data = re.sub(broken_line_ending_pattern, "\\1\r\n", data, 1)
-        Telnet.dataReceived(self, data)
+        try:
+            Telnet.dataReceived(self, data)
+        except ValueError as e:
+            print('Telnet error: %s'%e)
 
     applicationDataReceived = LineOnlyReceiver.dataReceived
 

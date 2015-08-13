@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import traceback
 import gtk
 from Tkinter import Tk
-from pymudclient.gui.gtkguiwidgets import MapView
+from pymudclient.gui.gtkguiwidgets import UpdatingWidgetView
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -71,7 +71,9 @@ class GUI(gtk.Window):
         self.time_online = TimeOnlineLabel()
         self.clipboard = gtk.Clipboard(selection='PRIMARY')
         self.target=gtk.Label()
-        self.map = MapView()
+        self.map = UpdatingWidgetView()
+        self.room_players = UpdatingWidgetView()
+        self.class_widget = UpdatingWidgetView()
         self.map_buffer=[]
         self.updatable_elements={'target':('Target: %s',self.target)}
         
@@ -100,6 +102,11 @@ class GUI(gtk.Window):
             self.output_window.show_metaline(metaline)
         if 'map' in channels:
             self.map_buffer.append(metaline)
+        if 'players' in channels:
+            self.room_players.writeLines([metaline])
+        if 'class' in channels:
+            print('writing to class')
+            self.class_widget.writeLines([metaline])
 
     def _make_widget_body(self):
         """Put it all together."""
@@ -124,7 +131,12 @@ class GUI(gtk.Window):
         labelbox.pack_start(self.target, expand=False)
         
         widgetbox = gtk.VBox()
-        widgetbox.pack_start(self.map)
+        widgethbox1 = gtk.HBox()
+        widgethbox1.pack_start(self.map)
+        widgethbox1.pack_start(gtk.VSeparator(),expand=False)
+    
+        widgetbox.pack_start(widgethbox1, expand=False)
+        widgetbox.pack_start(gtk.HSeparator(), expand=False)
         box = gtk.VBox()
 
         outputbox.pack_start(self.scrolled_out)
@@ -132,6 +144,10 @@ class GUI(gtk.Window):
         outputbox.pack_start(widgetbox)
         box.pack_start(outputbox)
         box.pack_start(gtk.HSeparator(), expand = False)
+        box.pack_start(self.room_players, expand=False)
+        box.pack_start(gtk.HSeparator(), expand=False)
+        box.pack_start(self.class_widget, expand=False)
+        box.pack_start(gtk.HSeparator(), expand=False)
         box.pack_start(self.scrolled_in, expand = False)
         box.pack_start(labelbox, expand = False)
         self.add(box)

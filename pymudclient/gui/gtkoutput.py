@@ -5,18 +5,71 @@ import pango
 from pymudclient.metaline import RunLengthList
 from datetime import datetime
 
-class OutputView(gtk.TextView):
+
+class DisplayView(gtk.TextView):
+    def __init__(self):
+        gtk.TextView.__init__(self)
+        self.buffer = self.get_buffer()
+        
+        self.set_editable(False)
+        self.set_cursor_visible(False)
+        self.set_wrap_mode(gtk.WRAP_CHAR)
+        self.modify_base(gtk.STATE_NORMAL, gtk.gdk.Color(0, 0, 0)) #sic
+        self.modify_font(pango.FontDescription('monospace 8'))
+        self._tags = {}
+        
+    def apply_colours(self, colours, offset, end_offset):
+        """Apply a RunLengthList of colours to the buffer, starting at
+        offset characters in.
+        """
+        end_iter = self.buffer.get_iter_at_offset(offset)
+        for tag, end in zip(map(self.fetch_tag, colours.values()),
+                                colours.keys()[1:] + [end_offset]):
+            start_iter = end_iter
+            end_iter = self.buffer.get_iter_at_offset(end + offset)
+            self.buffer.apply_tag(tag, start_iter, end_iter)
+            
+    def fetch_tag(self, colour):
+        """Check to see if a colour is in the tag table. If it isn't, add it.
+
+        Returns the tag.
+        """
+        #use our own tag table, because GTK's is too slow
+        if colour in self._tags:
+            tag = self._tags[colour]
+        else:
+            tag = self.buffer.create_tag(None)
+            tag.set_property(colour.ground + 'ground', '#' + colour.as_hex)
+            tag.set_property(colour.ground + 'ground-set', True)
+            self._tags[colour] = tag
+        return tag
+    
+    def show_metaline(self, metaline):
+        """Write a span of text to the window using the colours defined in
+        the other channels.
+
+        This will autoscroll to the end if we are not paused.
+        """
+        bytes = metaline.line.encode('utf-8')
+        end_iter = self.buffer.get_end_iter()
+        offset = end_iter.get_offset()
+        self.buffer.insert(end_iter, bytes)
+        self.apply_colours(metaline.fores, offset, len(metaline.line))
+        self.apply_colours(metaline.backs, offset, len(metaline.line))
+        return offset
+        
+        
+class OutputView(DisplayView):
 
     """The display for all the text received from the MUD."""
 
     def __init__(self, gui):
-        gtk.TextView.__init__(self)
+        DisplayView.__init__(self)
         #the identity of the return value of get_buffer() doesn't seem to be
         #stable. before, we used a property, but now we just get it once and
         #leave it at that because GTK complains about the non-identicality
         #of them.
         self.gui = gui
-        self.buffer = self.get_buffer()
         self.paused = False
         self.end_mark = self.buffer.create_mark('end_mark', 
                                                 self.buffer.get_end_iter(), 
@@ -26,13 +79,7 @@ class OutputView(gtk.TextView):
         self.set_property("has-tooltip", True)
         self.connect("query-tooltip", self.display_tooltip_cb)
 
-        self.set_editable(False)
-        self.set_cursor_visible(False)
-        self.set_wrap_mode(gtk.WRAP_CHAR)
-        self.modify_base(gtk.STATE_NORMAL, gtk.gdk.Color(0, 0, 0)) #sic
-        self.modify_font(pango.FontDescription('monospace 8'))
-        self._tags = {}
-
+        
     def got_focus_cb(self, widget, event):
         """We never want focus; the command line automatically lets us have
         all incoming keypresses that we're interested in.
@@ -80,12 +127,13 @@ class OutputView(gtk.TextView):
 
         This will autoscroll to the end if we are not paused.
         """
-        bytes = metaline.line.encode('utf-8')
-        end_iter = self.buffer.get_end_iter()
-        offset = end_iter.get_offset()
-        self.buffer.insert(end_iter, bytes)
-        self.apply_colours(metaline.fores, offset, len(metaline.line))
-        self.apply_colours(metaline.backs, offset, len(metaline.line))
+        #bytes = metaline.line.encode('utf-8')
+        #end_iter = self.buffer.get_end_iter()
+        #offset = end_iter.get_offset()
+        #self.buffer.insert(end_iter, bytes)
+        #self.apply_colours(metaline.fores, offset, len(metaline.line))
+        #self.apply_colours(metaline.backs, offset, len(metaline.line))
+        offset=DisplayView.show_metaline(self, metaline)
         if not self.paused:
             self.scroll_mark_onscreen(self.end_mark)
         else:
@@ -96,29 +144,5 @@ class OutputView(gtk.TextView):
         #anyway, we need to store the offset that -begins- the chunk of text
         self.timestamps[offset] = datetime.now()
 
-    def apply_colours(self, colours, offset, end_offset):
-        """Apply a RunLengthList of colours to the buffer, starting at
-        offset characters in.
-        """
-        end_iter = self.buffer.get_iter_at_offset(offset)
-        for tag, end in zip(map(self.fetch_tag, colours.values()),
-                                colours.keys()[1:] + [end_offset]):
-            start_iter = end_iter
-            end_iter = self.buffer.get_iter_at_offset(end + offset)
-            self.buffer.apply_tag(tag, start_iter, end_iter)
-            
-    def fetch_tag(self, colour):
-        """Check to see if a colour is in the tag table. If it isn't, add it.
-
-        Returns the tag.
-        """
-        #use our own tag table, because GTK's is too slow
-        if colour in self._tags:
-            tag = self._tags[colour]
-        else:
-            tag = self.buffer.create_tag(None)
-            tag.set_property(colour.ground + 'ground', '#' + colour.as_hex)
-            tag.set_property(colour.ground + 'ground-set', True)
-            self._tags[colour] = tag
-        return tag
+    
 

@@ -5,13 +5,12 @@ Created on Jul 29, 2015
 '''
 from pymudclient.modules import BaseModule
 from pymudclient.triggers import binding_trigger
-from pymudclient.gmcp_events import binding_gmcp_event
 from pymudclient.aliases import binding_alias
 from pymudclient.modules import load_file
 from pymudclient.tagged_ml_parser import taggedml
-from pymudclient.net.gmcp import ImperianGmcpHandler
+from pymudclient.library.imperian.player_tracker import PlayerTracker
 
-class ImperianModule(BaseModule, ImperianGmcpHandler):
+class ImperianModule(BaseModule):
     '''
     classdocs
     '''
@@ -24,8 +23,22 @@ class ImperianModule(BaseModule, ImperianGmcpHandler):
         BaseModule.__init__(self, realm)
         self.map_mode=False
         
-    @binding_trigger(r'---+ .+ --+$')
+    @property
+    def aliases(self):
+        return [self.show_gmcp, self.add_module,self.set_target]
+    @property
+    def triggers(self):
+        return [self.on_map_header_footer]
+    
+    @property
+    def modules(self):
+        return [PlayerTracker]
+        
+    @binding_trigger(r'---+ (.+) --+$')
     def on_map_header_footer(self, matches, realm):
+        inner_text = matches.group(1).lower()
+        if 'announcement' in inner_text: #hacky to avoid announcement lines that look similar
+            return
         if self.map_mode==False:
             realm.root.active_channels=['map']
             self.map_mode=True
@@ -36,9 +49,13 @@ class ImperianModule(BaseModule, ImperianGmcpHandler):
             self.map_mode=False
     
     
-    @binding_alias(r'^show_gmcp$')
+    @binding_alias('^show_gmcp(?: ((?:\w|\.)+))?$')
     def show_gmcp(self,match,realm):
-        realm.write(self.gmcpToString(realm.root.gmcp), soft_line_start=True)
+        tag = match.group(1)
+        if tag != None and tag in realm.root.gmcp:
+            realm.write(realm.root.gmcp_handler.gmcpToString(realm.root.gmcp[tag]), soft_line_start=True)
+        else:
+            realm.write(realm.root.gmcp_handler.gmcpToString(realm.root.gmcp), soft_line_start=True)
         realm.send_to_mud=False
         
     @binding_alias(r"^add_module (\w+)$")
@@ -65,9 +82,5 @@ class ImperianModule(BaseModule, ImperianGmcpHandler):
         realm.send_to_mud=False  
     
     @property
-    def aliases(self):
-        return [self.set_target, self.add_module, self.show_gmcp]
-    
-    @property
-    def triggers(self):
-        return [self.on_map_header_footer]
+    def modules(self):
+        return [PlayerTracker]

@@ -29,6 +29,8 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         self.allowing_compress = False
         self._colourparser = ColourCodeParser()
         self.fix_broken_godwars_line_endings = True
+        self.block_builder=[]
+        self.ga_ends_block=True
 
     def negotiate(self, bytes):
         
@@ -108,6 +110,8 @@ class TelnetClient(Telnet, LineOnlyReceiver):
             Telnet.dataReceived(self, data)
         except ValueError as e:
             print('Telnet error: %s'%e)
+            #It may be things getting stuck in 'escaped'
+            self.state='data'
 
     applicationDataReceived = LineOnlyReceiver.dataReceived
 
@@ -154,11 +158,19 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         metaline = self._colourparser.parseline(make_string_sane(line))
         if from_ga:
             metaline.line_end = 'soft'
+            self.factory.realm.block=self.block_builder
+            metaline.wrap = True
+            for l in self.block_builder:
+                self.factory.realm.metalineReceived(l)
+            self.factory.realm.metalineReceived(metaline)
+            self.block_builder=[]
+            
+            
         else:
             metaline.line_end = 'hard'
-        metaline.wrap = True
-        self.factory.realm.metalineReceived(metaline)
-
+            metaline.wrap = True
+            self.block_builder.append(metaline)
+        
 class TelnetClientFactory(ClientFactory):
 
     """A ClientFactory that produces TelnetClients."""

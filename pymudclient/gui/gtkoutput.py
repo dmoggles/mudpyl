@@ -58,7 +58,17 @@ class DisplayView(gtk.TextView):
         self.apply_colours(metaline.backs, offset, len(metaline.line))
         return offset
         
-        
+class ScrollingDisplayView(DisplayView):
+    def __init__(self):
+        DisplayView.__init__(self)
+        self.end_mark = self.buffer.create_mark('end_mark', 
+                                                self.buffer.get_end_iter(), 
+                                                False)
+    def show_metaline(self, metaline):
+        offset= DisplayView.show_metaline(self, metaline)
+        self.scroll_mark_onscreen(self.end_mark)
+        return offset
+          
 class OutputView(DisplayView):
 
     """The display for all the text received from the MUD."""

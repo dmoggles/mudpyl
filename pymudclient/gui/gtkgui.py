@@ -1,5 +1,5 @@
 """A GUI for pymudclient written in PyGTK."""
-from pymudclient.gui.gtkoutput import OutputView
+from pymudclient.gui.gtkoutput import OutputView, ScrollingDisplayView
 from pymudclient.gui.gtkcommandline import CommandView
 from twisted.internet.task import LoopingCall
 from pymudclient.gui.keychords import from_string
@@ -67,6 +67,7 @@ class GUI(gtk.Window):
         self.output_window = OutputView(self)
         self.scrolled_out = gtk.ScrolledWindow()
         self.scrolled_in = gtk.ScrolledWindow()
+        self.scrolled_comm = gtk.ScrolledWindow()
         self.paused_label = gtk.Label()
         self.time_online = TimeOnlineLabel()
         self.clipboard = gtk.Clipboard(selection='PRIMARY')
@@ -74,6 +75,7 @@ class GUI(gtk.Window):
         self.map = UpdatingWidgetView()
         self.room_players = UpdatingWidgetView()
         self.class_widget = UpdatingWidgetView()
+        self.comm_widget = ScrollingDisplayView()
         self.map_buffer=[]
         self.updatable_elements={'target':('Target: %s',self.target)}
         
@@ -105,8 +107,9 @@ class GUI(gtk.Window):
         if 'players' in channels:
             self.room_players.writeLines([metaline])
         if 'class' in channels:
-            print('writing to class')
             self.class_widget.writeLines([metaline])
+        if 'comm' in channels:
+            self.comm_widget.show_metaline(metaline)
 
     def _make_widget_body(self):
         """Put it all together."""
@@ -135,7 +138,11 @@ class GUI(gtk.Window):
         widgethbox1.pack_start(self.map)
         widgethbox1.pack_start(gtk.VSeparator(),expand=False)
     
-        widgetbox.pack_start(widgethbox1, expand=False)
+        widgetbox.pack_start(widgethbox1, expand=True)
+        widgetbox.pack_start(gtk.HSeparator(), expand=False)
+        self.scrolled_comm.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
+        self.scrolled_comm.add(self.comm_widget)
+        widgetbox.pack_start(self.scrolled_comm, expand=True)
         widgetbox.pack_start(gtk.HSeparator(), expand=False)
         box = gtk.VBox()
 

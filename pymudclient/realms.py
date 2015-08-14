@@ -40,13 +40,19 @@ class RootRealm(object):
         self._closing_down = False
         self.gmcp_handler = None
         self.gmcp_events=[]
+        self.block_handlers=[]
         self.gmcp={}
         self.state={}
         self.module_settings_dir=''
         
         self.active_channels=['main']
+        self.block=[]
+        self.hide_lines=0
+        self.last_line=None
     #Bidirectional, or just ambivalent, functions.
-
+    def hide_next_lines(self,num_lines):
+        self.hide_lines+=num_lines
+        
     def clear_modules(self):
         """Restore our state to a pristine (ie, blank) condition.
         """
@@ -167,10 +173,15 @@ class RootRealm(object):
 
     def gmcpReceived(self, gmcp_pair):
         """Take GMCP data and do something with it"""
-        """TODO: Again, could be made more like aliases and triggers"""
         for gmcp_event in self.gmcp_events:
             gmcp_event(gmcp_pair, self)
 
+    def blockReceived(self, block):
+        """Give the block to anyone who wants it"""
+        for block_handler in self.block_handlers:
+            block_handler(block, self)
+            
+            
     def metalineReceived(self, metaline):
         """Match a line against the triggers and perhaps display it on screen.
         """
@@ -183,6 +194,10 @@ class RootRealm(object):
         self.write(ml, soft_line_start)
         
     def write(self, line, soft_line_start = False):
+        if self.hide_lines>0:
+            self.hide_lines-=1
+            return
+        
         """Write a line to the screen.
         
         This forcibly converts its argument to a Metaline.

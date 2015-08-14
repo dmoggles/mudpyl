@@ -46,6 +46,8 @@ class ImperianGmcpHandler:
                 message_data = result.group(2)
                 realm.gmcp[message_type]=message_data
                 realm.gmcpReceived((message_type, message_data))
+            else:
+                print('Really unknown GMCP type %s'%data_string)
         
         #structure = json.load(''.join(bytes))
         #print(structure)

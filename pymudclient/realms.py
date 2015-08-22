@@ -3,7 +3,7 @@ from code import InteractiveConsole
 from pymudclient.escape_parser import EscapeParser
 from pymudclient.colours import fg_code, bg_code, BLACK, WHITE, HexFGCode
 from pymudclient.metaline import Metaline, simpleml
-from pymudclient.triggers import TriggerMatchingRealm
+from pymudclient.triggers import TriggerMatchingRealm, TriggerBlockMatchingRealm
 from pymudclient.aliases import AliasMatchingRealm
 from pymudclient.modules import load_file
 from pymudclient.gui.bindings import gui_macros
@@ -177,9 +177,10 @@ class RootRealm(object):
             gmcp_event(gmcp_pair, self)
 
     def blockReceived(self, block):
-        """Give the block to anyone who wants it"""
-        for block_handler in self.block_handlers:
-            block_handler(block, self)
+        if len(block) > 0:
+            realm = TriggerBlockMatchingRealm(block, parent = self, root = self,    
+                                          send_line_to_mud = self.telnet.sendLine)
+            realm.process()
             
             
     def metalineReceived(self, metaline):

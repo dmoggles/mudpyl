@@ -40,6 +40,10 @@ class BaseModule(object):
     def get_gmcp_handler(self):
         return None
     
+    
+    def on_prompt(self, realm):
+        pass
+    
     def __hash__(self):
         return id(self)
 
@@ -62,6 +66,8 @@ class EarlyInitialisingModule(object):
     def get_gmcp_handler(self):
         return None
     
+    def on_prompt(self, realm):
+        pass
     macros = {}
     triggers = []
     aliases = []

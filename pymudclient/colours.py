@@ -7,8 +7,10 @@ BLUE = '4'
 PURPLE = '5'
 CYAN = '6'
 WHITE = '7'
+GREY = '8'
+ORANGE= '9'
 
-NORMAL_CODES = set([BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE])
+NORMAL_CODES = set([BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE, GREY,ORANGE])
 
 normal_colours = {BLACK: (0x00, 0x00, 0x00),
                   RED: (0x80, 0x00, 0x00),
@@ -17,7 +19,9 @@ normal_colours = {BLACK: (0x00, 0x00, 0x00),
                   BLUE: (0x36, 0x3A, 0xEB),
                   PURPLE: (0x80, 0x00, 0x80),
                   CYAN: (0x00, 0x61, 0x61),
-                  WHITE: (0xC0, 0xC0, 0xC0)}
+                  WHITE: (0xC0, 0xC0, 0xC0),
+                  GREY: (0x40, 0x40, 0x40),
+                  ORANGE: (0xCD, 0x66, 0x00)}
 
 bolded_colours = {BLACK: (0x80, 0x80, 0x80),
                   RED: (0xFF, 0x00, 0x00),
@@ -26,7 +30,9 @@ bolded_colours = {BLACK: (0x80, 0x80, 0x80),
                   BLUE: (0x81, 0x81, 0xFF),
                   PURPLE: (0xFF, 0x00, 0xFF),
                   CYAN: (0x00, 0xFF, 0xFF),
-                  WHITE: (0xFF, 0xFF, 0xFF)}
+                  WHITE: (0xFF, 0xFF, 0xFF),
+                  GREY: (0x80, 0x80, 0x80),
+                  ORANGE: (0xFF, 0xA5, 0x00)}
 
 _fg_cache = {}
 def fg_code(code, bold):

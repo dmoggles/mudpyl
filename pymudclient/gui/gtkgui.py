@@ -75,6 +75,7 @@ class GUI(gtk.Window):
         self.map = UpdatingWidgetView()
         self.room_players = UpdatingWidgetView()
         self.class_widget = UpdatingWidgetView()
+        self.self_aff_widget = UpdatingWidgetView()
         self.comm_widget = ScrollingDisplayView()
         self.map_buffer=[]
         self.updatable_elements={'target':('Target: %s',self.target)}
@@ -110,6 +111,8 @@ class GUI(gtk.Window):
             self.class_widget.writeLines([metaline])
         if 'comm' in channels:
             self.comm_widget.show_metaline(metaline)
+        if 'afflictions' in channels:
+            self.self_aff_widget.writeLines([metaline])
 
     def _make_widget_body(self):
         """Put it all together."""
@@ -146,14 +149,16 @@ class GUI(gtk.Window):
         widgetbox.pack_start(gtk.HSeparator(), expand=False)
         box = gtk.VBox()
 
-        outputbox.pack_start(self.scrolled_out)
+        outputbox.pack_start(self.scrolled_out, expand=True)
         outputbox.pack_start(gtk.VSeparator(), expand=False)
-        outputbox.pack_start(widgetbox)
+        outputbox.pack_start(widgetbox, expand=True)
         box.pack_start(outputbox)
         box.pack_start(gtk.HSeparator(), expand = False)
         box.pack_start(self.room_players, expand=False)
         box.pack_start(gtk.HSeparator(), expand=False)
         box.pack_start(self.class_widget, expand=False)
+        box.pack_start(gtk.HSeparator(), expand=False)
+        box.pack_start(self.self_aff_widget, expand=False)
         box.pack_start(gtk.HSeparator(), expand=False)
         box.pack_start(self.scrolled_in, expand = False)
         box.pack_start(labelbox, expand = False)

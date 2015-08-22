@@ -7,6 +7,7 @@ from pymudclient.matchers import BindingPlaceholder, NonbindingPlaceholder, \
 from pymudclient.metaline import iadjust
 from pymudclient.aliases import AliasMatchingRealm
 import re
+from pymudclient.tagged_ml_parser import taggedml
 
 class RegexTrigger(ProtoMatcher):
     """A single trigger, that matches simply on a regex."""
@@ -95,6 +96,83 @@ class LineAlterer(object):
             getattr(metaline, meth)(*args)
         return metaline
 
+
+class TriggerBlockMatchingRealm(BaseMatchingRealm):
+    """This is like trigger matching realm, but it operates on an entire block"""
+    def __init__(self, block, root, parent, send_line_to_mud):
+        BaseMatchingRealm.__init__(self, root, parent, send_line_to_mud)
+        self.block=block
+        self.alterers=[LineAlterer()]*len(self.block)
+        self.display_lines = [True]*len(self.block)
+        self.display_group = True
+        
+        self.line_index=0
+        
+    @property
+    def metaline(self):
+        return self.block[self.line_index]
+    @metaline.setter
+    def metaline(self, value):
+        self.block[self.line_index]=value
+        
+    @property
+    def alterer(self):
+        return self.alterers[self.line_index]
+    @alterer.setter
+    def alterer(self, value):
+        self.alterers[self.line_index]=value
+        
+    @property
+    def display_line(self):
+        return self.display_lines[self.line_index]
+    @display_line.setter
+    def display_line(self, value):
+        self.display_lines[self.line_index]=value
+      
+      
+    def process(self):
+        """Do our main thing."""
+        channels=[]
+        for ml in self.block:
+            self._match_generic(ml, self.root.triggers)
+            '''triggers can set a different channel to write the text to, and we need to respect that'''
+            channels.append(self.root.active_channels)
+            self.line_index+=1
+            
+        for module in self.root.modules:
+            module.on_prompt(self)
+            
+        for indx, alterer in enumerate(self.alterers):
+            metaline = alterer.apply(self.block[indx])
+            '''Apply the channels that were set when actually writing'''
+            self.root.active_channels=channels[indx]
+            if self.display_lines[indx] and self.display_group:
+                self.parent.write(metaline)
+            self._write_after(indx)
+          
+    def _write_after(self, indx):
+        """Write everything we've been waiting to."""
+        writing_after_indx=[(line, sls) for (line, i, sls) in self._writing_after if i == indx]
+        for noteline, sls in writing_after_indx:
+            self.parent.write(noteline, sls)
+    
+
+    def write(self, line, soft_line_start = False):
+        """Write a line to the screen.
+
+        This buffers until the original line has been displayed or echoed.
+        """
+        self._writing_after.append((line, self.line_index, soft_line_start))
+        
+    def send(self, line, echo = False):
+        """Send a line to the MUD."""
+        #need to spin a new realm out here to make sure that the writings from
+        #the alias go after ours.
+        realm = AliasMatchingRealm(line, echo, parent = self, root = self.root,
+                                   send_line_to_mud = self.send_line_to_mud)
+        realm.process()
+        
+        
 class TriggerMatchingRealm(BaseMatchingRealm):
     """A realm representing the matching of triggers.
     
@@ -121,7 +199,9 @@ class TriggerMatchingRealm(BaseMatchingRealm):
         self.metaline = metaline
         self.alterer = LineAlterer()
         self.display_line = True
-
+        self.display_group = True
+        self.block=[metaline]
+        self.line_index=0
     def process(self):
         """Do our main thing."""
         self._match_generic(self.metaline, self.root.triggers)

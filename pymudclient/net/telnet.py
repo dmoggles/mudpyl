@@ -157,12 +157,18 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         line = line.decode(self.factory.encoding)
         metaline = self._colourparser.parseline(make_string_sane(line))
         if from_ga:
-            metaline.line_end = 'soft'
-            self.factory.realm.block=self.block_builder
-            metaline.wrap = True
-            for l in self.block_builder:
-                self.factory.realm.metalineReceived(l)
-            self.factory.realm.metalineReceived(metaline)
+            #metaline.line_end = 'soft'
+            #self.factory.realm.block=self.block_builder
+            #metaline.wrap = True
+            #for l in self.block_builder:
+            #    self.factory.realm.metalineReceived(l)
+            #self.factory.realm.metalineReceived(metaline)
+            #self.block_builder=[]
+            metaline.line_end='soft'
+            metaline.wrap=True
+            self.block_builder.append(metaline)
+            self.factory.realm.block = self.block_builder
+            self.factory.realm.blockReceived(self.block_builder)
             self.block_builder=[]
             
             

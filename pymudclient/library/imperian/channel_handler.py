@@ -20,13 +20,14 @@ class ChannelHandler(BaseModule):
         return [self.channel_trigger]
     
     @binding_trigger(['^\(\w+\): ',
-                      '(\w+) tells you, "'])
+                      '^.*(\w+) tells you, "'])
     def channel_trigger(self, match, realm):
-        block=realm.root.block
+        block = realm.block
+        start_line = realm.line_index
         active_channels = realm.root.active_channels
         realm.root.active_channels=['comm']
-        for l in block:
-            realm.root.write(l)
+        for i in xrange(start_line, len(block)-1):
+            realm.root.write(block[i])
         realm.root.active_channels=active_channels
         
         

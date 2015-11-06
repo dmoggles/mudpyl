@@ -49,7 +49,19 @@ class RootRealm(object):
         self.block=[]
         self.hide_lines=0
         self.last_line=None
+        
+        self.gui=None
     #Bidirectional, or just ambivalent, functions.
+    
+    def get_state(self, item):
+        if item in self.state:
+            return self.state[item]
+        else:
+            return ''
+        
+    def set_state(self, item, value):
+        self.state[item]=value
+        
     def hide_next_lines(self,num_lines):
         self.hide_lines+=num_lines
         

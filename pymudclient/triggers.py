@@ -139,8 +139,8 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
             channels.append(self.root.active_channels)
             self.line_index+=1
             
-        for module in self.root.modules:
-            module.on_prompt(self)
+        #for module in self.root.modules:
+        #    module.on_prompt(self)
             
         for indx, alterer in enumerate(self.alterers):
             metaline = alterer.apply(self.block[indx])

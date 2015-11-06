@@ -49,19 +49,26 @@ class PlayerTracker(BaseModule):
             return
         if target_num == -1:
             self.target = ''
-            realm.root.state['target']=''
+            realm.send('untar')
         else:
             target = self.players[target_num]
             realm.cwrite('<cyan*>Target set: <red*>%s'%target)
-            realm.root.state['target']=target
             self.target=target
             self.manual_target=False
+            realm.send('tar %s'%target)
         self.output_to_window(realm.root)
     
     @binding_gmcp_event('Room.Players')
     def on_room_players(self, gmcp_data, realm):
-        self.players=[str(p['name']) for p in gmcp_data]
+        self.players=[str(p['name']).lower() for p in gmcp_data]
         self.output_to_window(realm)
+        if realm.root.gui:
+            target = realm.root.get_state("target").lower()
+            if target in self.players:
+                realm.root.gui.set_target_here(True)
+            else:
+                realm.root.gui.set_target_here(False)
+            
         
     def output_to_window(self,realm):
         my_active_channels=realm.active_channels
@@ -74,18 +81,23 @@ class PlayerTracker(BaseModule):
         
     @binding_gmcp_event('Room.AddPlayer')
     def on_room_add_player(self, gmcp_data, realm):
-        self.players.append(str(gmcp_data['name']))
+        self.players.append(str(gmcp_data['name']).lower())
         self.output_to_window(realm)
+        #change gui color
+        if realm.root.gui and realm.root.get_state('target').lower()==str(gmcp_data['name']).lower():
+            realm.root.gui.set_target_here(True)
         
     @binding_gmcp_event('Room.RemovePlayer')
     def on_room_remove_player(self, gmcp_data, realm):
         print(gmcp_data)
         print(self.players)
         name=str(gmcp_data)[1:-1]
-        if name in self.players:
-            print("found player to remove")
+        if realm.root.gui and realm.root.get_state('target').lower()==name.lower():
+            realm.root.gui.set_target_here(False)
+        if name.lower() in self.players:
             self.players.remove(name)
             self.output_to_window(realm)
+            
     
     def getPlayerWidgetStringHorizontal(self):
         output=''

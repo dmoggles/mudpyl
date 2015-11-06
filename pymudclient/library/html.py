@@ -1,7 +1,7 @@
 """Utilities and stuff for HTML logging."""
 from cgi import escape
 from pymudclient.modules import BaseModule
-from pymudclient.colours import fg_code, bg_code, WHITE, BLACK
+from pymudclient.colours import fg_code, bg_code, WHITE, BLACK, GREY, HexFGCode
 import time
 import os
 
@@ -82,7 +82,13 @@ body {
         the log separately."""
         if len(channels)>0 and not 'main' in channels:
             return
+        if metaline.line[0]=='\n':
+            ts_string='[%s] '%time.strftime('%H:%M:%S')
+            metaline.insert(1,ts_string)
+            metaline.change_fore(1, len(ts_string)+1, HexFGCode(0x80, 0x80, 0x80))
         line = metaline.line
+        
+        
         #the indices are relative to the original string, not the previous
         #index, so we need to track what the previous index was to figure out
         #how much of the string needs to be coloured.

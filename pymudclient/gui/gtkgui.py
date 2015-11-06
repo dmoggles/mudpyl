@@ -8,6 +8,8 @@ import traceback
 import gtk
 from Tkinter import Tk
 from pymudclient.gui.gtkguiwidgets import UpdatingWidgetView
+from gtk._gtk import SHRINK
+from pymudclient.library.imperian.imperian_gui import EnemyPanel
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -119,7 +121,8 @@ class GUI(gtk.Window):
         self.set_title("%s - pymudclient" % self.realm.factory.name)
         self.connect('destroy', self.destroy_cb)
         self.maximize() #sic
-        outputbox = gtk.HBox()
+        outputbox = gtk.Table(columns=6,rows=1,homogeneous=True)
+        outputbox.set_col_spacings(3)
         #never have hscrollbars normally, always have vscrollbars
         self.scrolled_out.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
         self.scrolled_out.add(self.output_window)
@@ -148,10 +151,17 @@ class GUI(gtk.Window):
         widgetbox.pack_start(self.scrolled_comm, expand=True)
         widgetbox.pack_start(gtk.HSeparator(), expand=False)
         box = gtk.VBox()
-
-        outputbox.pack_start(self.scrolled_out, expand=True)
-        outputbox.pack_start(gtk.VSeparator(), expand=False)
-        outputbox.pack_start(widgetbox, expand=True)
+        #outputbox.pack_start(self.scrolled_out, expand=True)
+        #outputbox.pack_start(gtk.VSeparator(), expand=False)
+        #outputbox.pack_start(widgetbox, expand=True)
+        
+        left_box = gtk.VBox()
+        left_box.pack_start(self.realm.gui)
+        outputbox.attach(left_box, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
+        outputbox.attach(self.scrolled_out, left_attach=1, right_attach=4, top_attach=0, bottom_attach=1)
+        outputbox.attach(widgetbox, left_attach=4, right_attach=6, top_attach=0, bottom_attach=1)
+       
+        
         box.pack_start(outputbox)
         box.pack_start(gtk.HSeparator(), expand = False)
         box.pack_start(self.room_players, expand=False)

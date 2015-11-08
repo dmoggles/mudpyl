@@ -10,8 +10,8 @@ from pymudclient.gui.gtkoutput import DisplayView
 
 
 class UpdatingWidgetView(DisplayView):
-    def __init__(self):
-        DisplayView.__init__(self)
+    def __init__(self, gui):
+        DisplayView.__init__(self, gui)
     
     def writeLines(self, lines):
         '''clear the screen and write new lines to it'''

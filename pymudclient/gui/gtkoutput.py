@@ -7,8 +7,9 @@ from datetime import datetime
 
 
 class DisplayView(gtk.TextView):
-    def __init__(self):
+    def __init__(self, gui):
         gtk.TextView.__init__(self)
+        self.gui = gui
         self.buffer = self.get_buffer()
         
         self.set_editable(False)
@@ -16,7 +17,14 @@ class DisplayView(gtk.TextView):
         self.set_wrap_mode(gtk.WRAP_CHAR)
         self.modify_base(gtk.STATE_NORMAL, gtk.gdk.Color(0, 0, 0)) #sic
         self.modify_font(pango.FontDescription('monospace 8'))
+        self.connect('focus-in-event', self.got_focus_cb)
         self._tags = {}
+        
+    def got_focus_cb(self, widget, event):
+        """We never want focus; the command line automatically lets us have
+        all incoming keypresses that we're interested in.
+        """
+        self.gui.command_line.grab_focus()
         
     def apply_colours(self, colours, offset, end_offset):
         """Apply a RunLengthList of colours to the buffer, starting at
@@ -59,8 +67,8 @@ class DisplayView(gtk.TextView):
         return offset
         
 class ScrollingDisplayView(DisplayView):
-    def __init__(self):
-        DisplayView.__init__(self)
+    def __init__(self, gui):
+        DisplayView.__init__(self, gui)
         self.end_mark = self.buffer.create_mark('end_mark', 
                                                 self.buffer.get_end_iter(), 
                                                 False)
@@ -74,12 +82,12 @@ class OutputView(DisplayView):
     """The display for all the text received from the MUD."""
 
     def __init__(self, gui):
-        DisplayView.__init__(self)
+        DisplayView.__init__(self, gui)
         #the identity of the return value of get_buffer() doesn't seem to be
         #stable. before, we used a property, but now we just get it once and
         #leave it at that because GTK complains about the non-identicality
         #of them.
-        self.gui = gui
+        #self.gui = gui
         self.paused = False
         self.end_mark = self.buffer.create_mark('end_mark', 
                                                 self.buffer.get_end_iter(), 
@@ -90,11 +98,7 @@ class OutputView(DisplayView):
         self.connect("query-tooltip", self.display_tooltip_cb)
 
         
-    def got_focus_cb(self, widget, event):
-        """We never want focus; the command line automatically lets us have
-        all incoming keypresses that we're interested in.
-        """
-        self.gui.command_line.grab_focus()
+    
 
     def display_tooltip_cb(self, widget, wx, wy, keyboard_mode, tooltip):
         """Display a timestamp for the line the user hovers over."""

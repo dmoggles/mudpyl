@@ -74,11 +74,11 @@ class GUI(gtk.Window):
         self.time_online = TimeOnlineLabel()
         self.clipboard = gtk.Clipboard(selection='PRIMARY')
         self.target=gtk.Label()
-        self.map = UpdatingWidgetView()
-        self.room_players = UpdatingWidgetView()
-        self.class_widget = UpdatingWidgetView()
-        self.self_aff_widget = UpdatingWidgetView()
-        self.comm_widget = ScrollingDisplayView()
+        self.map = UpdatingWidgetView(self)
+        self.room_players = UpdatingWidgetView(self)
+        self.class_widget = UpdatingWidgetView(self)
+        self.self_aff_widget = UpdatingWidgetView(self)
+        self.comm_widget = ScrollingDisplayView(self)
         self.map_buffer=[]
         self.updatable_elements={'target':('Target: %s',self.target)}
         

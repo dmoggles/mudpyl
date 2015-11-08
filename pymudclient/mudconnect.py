@@ -44,7 +44,7 @@ def main():
 
     if options.gui == 'gtk':
         from pymudclient.gui.gtkgui import configure
-        factory.realm.gui = ImperianGui()
+        factory.realm.gui = ImperianGui(factory.realm)
 
     configure(factory)
     factory.realm.module_settings_dir=options.settings_directory

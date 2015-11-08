@@ -13,6 +13,10 @@ from operator import attrgetter
 import traceback
 import time
 
+
+
+
+
 class RootRealm(object):
     """The root of the realms hierarchy. This is what macros and top-level
     modules deal with.
@@ -51,8 +55,22 @@ class RootRealm(object):
         self.last_line=None
         
         self.gui=None
+        
+        
+        self.event_handlers={}
     #Bidirectional, or just ambivalent, functions.
     
+    def registerEventHandler(self, eventName, eventHandler):
+        if not eventName in self.event_handlers:
+            self.event_handlers[eventName]=[]
+        self.event_handlers[eventName].append(eventHandler)
+    
+    
+    def fireEvent(self, eventName, *args):
+        if eventName in self.event_handlers:
+            for eh in self.event_handlers[eventName]:
+                self.factory.reactor.callLater(0, eh, *args)
+                
     def get_state(self, item):
         if item in self.state:
             return self.state[item]

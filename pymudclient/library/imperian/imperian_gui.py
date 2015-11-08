@@ -563,7 +563,9 @@ class SelfPanel(BlackEventBox):
         self.add(f)
         
 class ImperianGui(BlackEventBox):
-    def __init__(self):
+    def __init__(self, realm):
+        self.realm = realm
+        self.realm.registerEventHandler('setTargetEvent', self.set_target)
         BlackEventBox.__init__(self)
         box=gtk.VBox()
         self.enemy=EnemyPanel()

@@ -151,7 +151,8 @@ class ImperianModule(BaseModule):
         ml = taggedml('<cyan*:black>Target set: <red*>%s'%my_target)                                                    
         realm.write(ml)
         realm.root.state['target']=my_target
-        realm.root.gui.set_target(my_target)
+        #realm.root.gui.set_target(my_target)
+        realm.root.fireEvent('setTargetEvent',my_target)
         realm.send_to_mud=False  
         
     @binding_alias('^en$')

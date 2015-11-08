@@ -56,7 +56,7 @@ class RootRealm(object):
         
         self.gui=None
         
-        
+        self.accessibility_mode = False
         self.event_handlers={}
     #Bidirectional, or just ambivalent, functions.
     
@@ -294,7 +294,7 @@ class RootRealm(object):
 
     def send(self, line, echo = True):
         """Match aliases against the line and perhaps send it to the MUD."""
-        echo = not self.server_echo and echo
+        echo = not self.server_echo and (echo and not self.accessibility_mode)
         realm = AliasMatchingRealm(line, echo, parent = self, root = self,
                                    send_line_to_mud = self.telnet.sendLine)
         realm.process()

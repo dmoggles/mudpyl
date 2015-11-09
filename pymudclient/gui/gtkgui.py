@@ -65,8 +65,9 @@ class GUI(gtk.Window):
         self.realm = realm
         self.realm.addProtocol(self)
         realm.factory.gui = self
+        self.output_container = gtk.VBox()
         self.command_line = CommandView(self)
-        self.output_window = OutputView(self)
+        self.output_window = OutputView(self, self.output_container)
         self.scrolled_out = gtk.ScrolledWindow()
         self.scrolled_in = gtk.ScrolledWindow()
         self.scrolled_comm = gtk.ScrolledWindow()
@@ -84,6 +85,7 @@ class GUI(gtk.Window):
         
         self.updater = updater(self)
         self._make_widget_body()
+        
         
         
 
@@ -157,8 +159,9 @@ class GUI(gtk.Window):
         
         left_box = gtk.VBox()
         left_box.pack_start(self.realm.gui)
+        self.output_container.pack_start(self.scrolled_out, expand=True)
         outputbox.attach(left_box, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
-        outputbox.attach(self.scrolled_out, left_attach=1, right_attach=4, top_attach=0, bottom_attach=1)
+        outputbox.attach(self.output_container, left_attach=1, right_attach=4, top_attach=0, bottom_attach=1)
         outputbox.attach(widgetbox, left_attach=4, right_attach=6, top_attach=0, bottom_attach=1)
        
         
@@ -205,6 +208,7 @@ class GUI(gtk.Window):
 
         As the command line is only one line, these don't make sense anyway.
         """
+        self.output_window.pause()
         self.scrolled_out.emit("scroll-child", gtk.SCROLL_PAGE_BACKWARD,
                                False)
 

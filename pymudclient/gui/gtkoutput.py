@@ -81,7 +81,7 @@ class OutputView(DisplayView):
 
     """The display for all the text received from the MUD."""
 
-    def __init__(self, gui):
+    def __init__(self, gui, container):
         DisplayView.__init__(self, gui)
         #the identity of the return value of get_buffer() doesn't seem to be
         #stable. before, we used a property, but now we just get it once and
@@ -96,7 +96,10 @@ class OutputView(DisplayView):
         self.connect('focus-in-event', self.got_focus_cb)
         self.set_property("has-tooltip", True)
         self.connect("query-tooltip", self.display_tooltip_cb)
-
+        self.container = container
+        self.paused_scrolling_view = None
+        self.paused_separator = gtk.HSeparator()
+        self.scrolled_paused=gtk.ScrolledWindow()
         
     
 
@@ -123,6 +126,18 @@ class OutputView(DisplayView):
         if not self.paused:
             self.paused = True
             self.gui.paused_label.set_markup("PAUSED")
+            self.scroll_mark_onscreen(self.end_mark)
+            self.scrolled_paused.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
+            self.paused_scrolling_view = ScrollingDisplayView(self.gui)
+            self.paused_scrolling_view.set_buffer(self.buffer)
+            self.scrolled_paused.add(self.paused_scrolling_view)
+            
+            self.container.pack_start(self.paused_separator, expand=False)
+            self.container.pack_start(self.scrolled_paused, expand=True)
+            self.scrolled_paused.show()
+            self.paused_separator.show()
+            
+            self.paused_scrolling_view.show()
 
     def unpause(self):
         """Restart autoscrolling to new data.
@@ -132,6 +147,11 @@ class OutputView(DisplayView):
         if self.paused:
             self.paused = False
             self.gui.paused_label.set_markup("")
+            self.container.remove(self.paused_separator)
+            self.container.remove(self.paused_scrolling_view)
+            self.container.remove(self.scrolled_paused)
+            self.paused_scrolling_view.destroy()
+            self.paused_scrolling_view=None
         #scroll to the end of output
         self.scroll_mark_onscreen(self.end_mark)
 
@@ -154,6 +174,7 @@ class OutputView(DisplayView):
             self.gui.paused_label.set_markup("<span foreground='#FFFFFF' "
                                                    "background='#000000'>"
                                                "MORE - PAUSED</span>")
+            self.paused_scrolling_view.show_metaline(metaline)
         #this is a bit naughty, we're bypassing the RLL's safety thingies
         #anyway, we need to store the offset that -begins- the chunk of text
         self.timestamps[offset] = datetime.now()

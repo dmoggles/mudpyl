@@ -156,6 +156,11 @@ class BaseMatchingRealm(object):
     def send(self, line, echo = False):
         """Send a line to the MUD immediately."""
         self.parent.send(line, echo)
+    
+    def safe_send(self, line, echo = False):
+        """Send a line to the mud, but only if it's safe to send"""
+        self.parent.safe_send(line, echo)
+        
 
     def _match_generic(self, line, matchers):
         """Test each matcher against the given line, and run the functions

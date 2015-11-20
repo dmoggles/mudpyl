@@ -4,7 +4,9 @@ import gtk
 import pango
 from pymudclient.metaline import RunLengthList
 from datetime import datetime
-
+    
+def do_print(ele, tag_table):
+    tag_table.add(ele)
 
 class DisplayView(gtk.TextView):
     def __init__(self, gui):
@@ -76,6 +78,17 @@ class ScrollingDisplayView(DisplayView):
         offset= DisplayView.show_metaline(self, metaline)
         self.scroll_mark_onscreen(self.end_mark)
         return offset
+    
+class DuplicateScrollingDisplayView(DisplayView):
+    def __init__(self, gui, buf):
+        DisplayView.__init__(self, gui)
+        self.set_buffer(buf)
+        self.end_mark = self.buffer.get_mark('end_mark')
+        
+    def show_metaline(self, metaline):
+        #offset= DisplayView.show_metaline(self, metaline)
+        self.scroll_mark_onscreen(self.end_mark)
+        return DisplayView.offset
           
 class OutputView(DisplayView):
 
@@ -121,6 +134,8 @@ class OutputView(DisplayView):
         tooltip.set_text(received_at.strftime("Received at: %H:%M:%S"))
         return True
 
+
+        
     def pause(self):
         """Stop autoscrolling to new data."""
         if not self.paused:
@@ -128,16 +143,18 @@ class OutputView(DisplayView):
             self.gui.paused_label.set_markup("PAUSED")
             self.scroll_mark_onscreen(self.end_mark)
             self.scrolled_paused.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
-            self.paused_scrolling_view = ScrollingDisplayView(self.gui)
-            self.paused_scrolling_view.set_buffer(self.buffer)
+            #self.paused_scrolling_view = ScrollingDisplayView(self.gui)
+            self.paused_scrolling_view = DuplicateScrollingDisplayView(self.gui, self.buffer)
             self.scrolled_paused.add(self.paused_scrolling_view)
             
             self.container.pack_start(self.paused_separator, expand=False)
             self.container.pack_start(self.scrolled_paused, expand=True)
             self.scrolled_paused.show()
             self.paused_separator.show()
-            
+            self.paused_scrolling_view.scroll_mark_onscreen(self.end_mark)
             self.paused_scrolling_view.show()
+            
+            
 
     def unpause(self):
         """Restart autoscrolling to new data.
@@ -174,7 +191,8 @@ class OutputView(DisplayView):
             self.gui.paused_label.set_markup("<span foreground='#FFFFFF' "
                                                    "background='#000000'>"
                                                "MORE - PAUSED</span>")
-            self.paused_scrolling_view.show_metaline(metaline)
+            #self.paused_scrolling_view.show_metaline(metaline)
+            self.paused_scrolling_view.scroll_mark_onscreen(self.end_mark)
         #this is a bit naughty, we're bypassing the RLL's safety thingies
         #anyway, we need to store the offset that -begins- the chunk of text
         self.timestamps[offset] = datetime.now()

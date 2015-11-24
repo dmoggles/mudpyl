@@ -1,5 +1,7 @@
 """Utility for passing around lines with their colour information."""
 from itertools import imap
+from pymudclient.colours import HexFGCode, HexBGCode, fg_code, WHITE, bg_code,\
+    BLACK
 
 def iadjust(ind, start, adj):
     """Moves the ind along by adj amount, unless ind is before start, when it
@@ -144,6 +146,19 @@ class RunLengthList(_sorteddict):
         """Return a deep copy of ourselves."""
         return RunLengthList(self, _normalised = True)
 
+def metaline_to_json(metaline):
+    return [metaline.line,
+            [(p, (c.red, c.green, c.blue)) for p, c in metaline.fores.items()],
+            [(p, (c.red, c.green, c.blue)) for p, c in metaline.backs.items()],
+            {"wrap": int(metaline.wrap), "line_end": metaline.line_end, "soft_line_start": int(metaline.soft_line_start)}]
+
+def json_to_metaline(jsonobj):
+    line, fores, backs = jsonobj[0:3]
+    fores = RunLengthList([(int(p), HexFGCode(*t)) for p, t in fores])
+    backs = RunLengthList([(int(p), HexBGCode(*t)) for p, t in backs])
+    kwargs = jsonobj[3]
+    return Metaline(line, fores, backs, **kwargs)
+
 class Metaline(object):
     """A line plus some metadata.
     
@@ -243,7 +258,7 @@ class Metaline(object):
 
         return metaline
 
-def simpleml(line, fore, back):
+def simpleml(line, fore = fg_code(WHITE, False), back = bg_code(BLACK)):
     """Simplified wrapper for creating simple metalines."""
     return Metaline(line, RunLengthList([(0, fore)]),
                     RunLengthList([(0, back)]))

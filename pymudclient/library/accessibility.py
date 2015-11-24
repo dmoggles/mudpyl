@@ -7,22 +7,17 @@ from pymudclient.modules import BaseModule
 from accessible_output import speech
 from pymudclient.triggers import binding_trigger
 
-class ScreenreaderProtocol(BaseModule):
+
+
+class ScreenreaderProtocol():
     
-    def __init__(self, realm):
-        BaseModule.__init__(self, realm)
+    def __init__(self, client):
         self.speaker = speech.Speaker()
-        realm.addProtocol(self)
-        realm.accessibility_mode = True
+        client.addProtocol(self)
+        client.user_echo = False
         
         
-    @property
-    def triggers(self):
-        return [self.prompt_gag]
     
-    @binding_trigger('^H:\d+')
-    def prompt_gag(self, match, realm):
-        realm.display_line=False
         
     
     def close(self):
@@ -36,3 +31,15 @@ class ScreenreaderProtocol(BaseModule):
     def metalineReceived(self, metaline,channels):
         if 'main' in channels:
             self.speaker.output(metaline.line)
+            
+            
+class ScreenreaderModule(BaseModule):
+   
+        
+    @property
+    def triggers(self):
+        return [self.prompt_gag]
+    
+    @binding_trigger('^H:\d+')
+    def prompt_gag(self, match, realm):
+        realm.display_line=False

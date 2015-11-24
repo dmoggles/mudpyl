@@ -17,19 +17,19 @@ from pymudclient.net.gmcp import GmcpHandler
 
 def get_char_data( name):
         
-    r=requests.get('http://api.imperian.com/characters/%s.json'%name.lower())
+    r=requests.get('http://api.aetolia.com/characters/%s.json'%name.lower())
     
     if not r.status_code == 200:
         return None
     else:
         d=json.loads(r.text)
-        description = d['description']
-        d1=description.split('.')[0]
-        statpack = re.match('(?:She|He) is (?:a|an) (\w+) (?:\w+)',d1).group(1)
-        d['statpack']=statpack
+        #description = d['description']
+        #d1=description.split('.')[0]
+        #statpack = re.match('(?:She|He) is (?:a|an) (\w+) (?:\w+)',d1).group(1)
+        #d['statpack']=statpack
         return d
             
-class ImperianModule(BaseModule):
+class AetoliaModule(BaseModule):
     '''
     classdocs
     '''
@@ -76,29 +76,27 @@ class ImperianModule(BaseModule):
             
     @binding_gmcp_event('Char.Vitals')
     def vitals(self, gmcp_data, realm):
-        hp=int(gmcp_data['hp'])/11
-        mp=int(gmcp_data['mp'])/11
-        mhp=int(gmcp_data['maxhp'])/11
-        mmp=int(gmcp_data['maxmp'])/11
+        hp=int(gmcp_data['hp'])
+        mp=int(gmcp_data['mp'])
+        mhp=int(gmcp_data['maxhp'])
+        mmp=int(gmcp_data['maxmp'])
         
         realm.root.set_state('hp',hp)
         realm.root.set_state('mp',mp)
         realm.root.set_state('maxhp',mhp)
         realm.root.set_state('maxmp',mmp)
+        realm.root.fireEvent('statUpdateEvent','hp',hp)
+        realm.root.fireEvent('statUpdateEvent','mp',mp)
+        realm.root.fireEvent('statUpdateEvent','maxhp',mhp)
+        realm.root.fireEvent('statUpdateEvent','maxmp',mmp)
         
-        #if realm.root.gui:
-        #    realm.root.gui.self_panel.hp_mana.set_curr_hp(hp)
-        #    realm.root.gui.self_panel.hp_mana.set_curr_mana(mp)
-        #    realm.root.gui.self_panel.hp_mana.set_max_hp(mhp)
-        #    realm.root.gui.self_panel.hp_mana.set_max_mana(mmp)
+        
     
-    @binding_trigger('^Your wounds cause you to bleed (\d+) health\.$')
+    @binding_trigger('^You bleed (\d+) health\.$')
     def bleeding(self, match, realm):
         bleed=int(match.group(1))
         realm.root.set_state('bleed',bleed)
-        #if realm.root.gui:
-        #    realm.root.gui.self_panel.bleed.set_current(bleed)
-            
+        realm.root.fireEvent('statUpdateEvent','bleeding',bleed)    
                   
         
     @binding_trigger('^(\w+) of your pipes have gone cold and dark\.$')
@@ -107,21 +105,22 @@ class ImperianModule(BaseModule):
         
     @binding_gmcp_event('Redirect.Window')
     def on_map_redirect(self, gmcp_data, realm):
-        realm.root.active_channels=[gmcp_data]
+        
+        realm.root.setActiveChannels([gmcp_data])
     
     @binding_trigger('-+(?: (?:.+) )?-+ v\d+ -+')
     def on_map_header(self, matches, realm):
         #inner_text = matches.group(1).lower()
         #if 'announcement' in inner_text: #hacky to avoid announcement lines that look similar
         #    return
-        realm.root.active_channels=['map']
+        realm.root.setActiveChannels(['map'])
         self.map_mode=True
         
     @binding_trigger("-+(?: .+ )?-* [-\d]+\:[-\d]+\:[-\d]+ -+")
     def on_map_footer(self, matches, realm):
         realm.display_line=False
         realm.root.write(realm.metaline)
-        realm.root.active_channels=['main']
+        realm.root.setActiveChannels(['main'])
         self.map_mode=False
     
     

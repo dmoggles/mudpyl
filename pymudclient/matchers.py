@@ -39,7 +39,8 @@ class ProtoMatcher(object):
         try:
             self.func(match, realm)
         except Exception: #don't catch KeyboardInterrupt etc
-            traceback.print_exc()
+            trace = traceback.format_exc()
+            realm.root.handle_exception(trace)
 
     def __cmp__(self, other):
         return cmp(self.sequence, other.sequence)
@@ -131,11 +132,10 @@ class BaseMatchingRealm(object):
 
     """A realm representing the matching of triggers or aliases."""
 
-    def __init__(self, root, parent, send_line_to_mud):
+    def __init__(self, root, parent):
         self.root = root
         self.parent = parent
         self._writing_after = []
-        self.send_line_to_mud = send_line_to_mud
 
     def _write_after(self):
         """Write everything we've been waiting to."""
@@ -173,6 +173,10 @@ class BaseMatchingRealm(object):
             matches = matcher.match(line)
             for match in matches:
                 matcher(match, self)
+                    
+    
+    def fireEvent(self, eventName, *args):
+        self.parent.fireEvent(eventName, *args)
 
     def trace(self, line):
         """Write the argument to the screen if we are tracing, elsewise do

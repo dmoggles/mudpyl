@@ -48,7 +48,8 @@ class ImperianModule(BaseModule):
                 self.enemy]
     @property
     def triggers(self):
-        return [self.on_map_header_footer,
+        return [self.on_map_header,
+                self.on_map_footer,
                 self.pipes,
                 self.bleeding]
     
@@ -58,7 +59,9 @@ class ImperianModule(BaseModule):
     
     @property
     def gmcp_events(self):
-        return[self.vitals]
+        return[self.vitals#, 
+               #self.on_map_redirect
+               ]
     
     @binding_alias('^whois (\w+)')
     def whois(self, match,realm):
@@ -101,19 +104,24 @@ class ImperianModule(BaseModule):
     def pipes(self, match,realm):
         realm.send('queue eqbal light pipes')
         
-    @binding_trigger(r'---+ (.+) --+$')
-    def on_map_header_footer(self, matches, realm):
-        inner_text = matches.group(1).lower()
-        if 'announcement' in inner_text: #hacky to avoid announcement lines that look similar
-            return
-        if self.map_mode==False:
-            realm.root.active_channels=['map']
-            self.map_mode=True
-        else:
-            realm.display_line=False
-            realm.root.write(realm.metaline)
-            realm.root.active_channels=['main']
-            self.map_mode=False
+    @binding_gmcp_event('Redirect.Window')
+    def on_map_redirect(self, gmcp_data, realm):
+        realm.root.active_channels=[gmcp_data]
+    
+    @binding_trigger('-+(?: (?:.+) )?-+ v\d+ -+')
+    def on_map_header(self, matches, realm):
+        #inner_text = matches.group(1).lower()
+        #if 'announcement' in inner_text: #hacky to avoid announcement lines that look similar
+        #    return
+        realm.root.active_channels=['map']
+        self.map_mode=True
+        
+    @binding_trigger("-+(?: .+ )?-* [-\d]+\:[-\d]+\:[-\d]+ -+")
+    def on_map_footer(self, matches, realm):
+        realm.display_line=False
+        realm.root.write(realm.metaline)
+        realm.root.active_channels=['main']
+        self.map_mode=False
     
     
     @binding_alias('^show_gmcp(?: ((?:\w|\.)+))?$')

@@ -156,26 +156,34 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         """
         line = line.decode(self.factory.encoding)
         metaline = self._colourparser.parseline(make_string_sane(line))
-        if from_ga:
-            #metaline.line_end = 'soft'
-            #self.factory.realm.block=self.block_builder
-            #metaline.wrap = True
-            #for l in self.block_builder:
-            #    self.factory.realm.metalineReceived(l)
-            #self.factory.realm.metalineReceived(metaline)
-            #self.block_builder=[]
-            metaline.line_end='soft'
-            metaline.wrap=True
-            self.block_builder.append(metaline)
-            self.factory.realm.block = self.block_builder
-            self.factory.realm.blockReceived(self.block_builder)
-            self.block_builder=[]
-            
-            
+        if not self.ga_ends_block:
+            if from_ga:
+                metaline.line_end = 'soft'
+            else:
+                metaline.line_end = 'hard'
+                metaline.wrap = True
+            self.factory.realm.metalineReceived(metaline)
         else:
-            metaline.line_end = 'hard'
-            metaline.wrap = True
-            self.block_builder.append(metaline)
+            if from_ga:
+                #metaline.line_end = 'soft'
+                #self.factory.realm.block=self.block_builder
+                #metaline.wrap = True
+                #for l in self.block_builder:
+                #    self.factory.realm.metalineReceived(l)
+                #self.factory.realm.metalineReceived(metaline)
+                #self.block_builder=[]
+                metaline.line_end='soft'
+                metaline.wrap=True
+                self.block_builder.append(metaline)
+                self.factory.realm.block = self.block_builder
+                self.factory.realm.blockReceived(self.block_builder)
+                self.block_builder=[]
+                
+                
+            else:
+                metaline.line_end = 'hard'
+                metaline.wrap = True
+                self.block_builder.append(metaline)
         
 class TelnetClientFactory(ClientFactory):
 

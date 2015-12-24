@@ -19,7 +19,7 @@ class ChannelHandler(BaseModule):
     def triggers(self):
         return [self.channel_trigger]
     
-    @binding_trigger(['^\(\w+\): ',
+    @binding_trigger(['^\([\w ]+\): ',
                       '^.*(\w+) tells you, "'])
     def channel_trigger(self, match, realm):
         block = realm.block

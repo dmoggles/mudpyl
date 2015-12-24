@@ -28,5 +28,5 @@ setup(name = "pymudclient",
                         },
       test_suite = 'nose.collector',
       packages = find_packages(),
-      scripts = ['pymudclient/mudconnect.py'],
+      scripts = ['pymudclient/mudconnect.py','pymudclient/mudconnect_new.py'],
 )

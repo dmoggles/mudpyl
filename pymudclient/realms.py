@@ -212,7 +212,9 @@ class RootRealm(object):
             realm = TriggerBlockMatchingRealm(block, parent = self, root = self,    
                                           send_line_to_mud = self.telnet.sendLine)
             realm.process()
-            
+     
+    def setActiveChannels(self, channels):
+        self.active_channels = channels       
             
     def metalineReceived(self, metaline):
         """Match a line against the triggers and perhaps display it on screen.

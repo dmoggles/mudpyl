@@ -23,6 +23,7 @@ class MudProcessor(LineReceiver):
         meth,rest = json.loads(line)
         if meth == "close":
             #XXX: do better
+            self.log.close()
             self.transport.loseConnection()
             from twisted.internet import reactor
             reactor.stop()
@@ -30,18 +31,19 @@ class MudProcessor(LineReceiver):
             self.log.write('Hello received')
             name = rest[0]
             self.name = name
+            
         elif meth == 'mud_line':
             metaline = json_to_metaline(rest[0])
             display_line = bool(rest[1])
-            self.match_triggers(metaline, display_line)
-            self.transport.write(json.dumps(['display_line', [metaline_to_json(metaline), 1]]))
+            #self.match_triggers(metaline, display_line)
+            self.transport.write(json.dumps(['display_line', [metaline_to_json(metaline), 1]])+'\n')
         elif meth == 'user_line':
             line = rest[0]
-            self.transport.write(json.dumps(['send_to_mud',[line]]))
+            self.transport.write(json.dumps(['send_to_mud',line])+'\n')
         elif meth == 'do_block':
             lines = json.loads(rest[0])
             for l in lines:
-                self.transport.write(json.dumps(['display_line',[l]]))
+                self.transport.write(json.dumps(['display_line',[l]])+'\n')
             
         
         else:

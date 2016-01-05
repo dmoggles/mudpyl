@@ -19,7 +19,7 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         self.messages_not_acknowledged = 0
         
     def send_to_client(self, meth, params):
-        print('send to processor: %s, %s'%(meth, json.dumps(params)))
+        #print('send to processor: %s, %s'%(meth, json.dumps(params)))
         self.transport.write(json.dumps([meth, params]) + "\n")
 
     def connectionMade(self):
@@ -67,16 +67,15 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
             self.client_started_processing_at = time.time()
         self.messages_not_acknowledges += 1
         
+    def errReceived(self, data):
+        print('ERROR: %s'%data)
+    
+    outReceived = LineReceiver.dataReceived
         
-class Factory():
-    def __init__(self, realm, name):
-        self.realm = realm
-        self.name = name
-        self.gui = None
 class Connector:
     def __init__(self,  mod):
         self.mod = mod
-        self.factory=Factory(self, mod.name)
+        self.gui = None
         self.telnet=None
         self.client=None
         self._escape_parser=EscapeParser()
@@ -84,11 +83,13 @@ class Connector:
         self.wrapper = TextWrapper(width=100, drop_whitespace=False)
         self._closing_down = False
         self.protocols = []
-        self.gui = None
+        self.extra_gui = None
         self.macros={}
         self.baked_in_macros={}
         self.state={}
-     
+        self._last_line_end = None
+        self.active_channels=['main']
+        self.gmcp_handler=None
      
     
     def addProtocol(self, protocol):
@@ -120,7 +121,7 @@ class Connector:
         message = time.strftime("Connection closed at %H:%M:%S.")
         colour = HexFGCode(0xFF, 0xAA, 0x00) #lovely orange
         metaline = simpleml(message, colour, bg_code(BLACK))
-        self.write_metaline(metaline)
+        self.write(metaline)
         for prot in self.protocols:
             prot.connectionLost()
         self.client.connectionLost()
@@ -137,7 +138,7 @@ class Connector:
         message = time.strftime("Connection opened at %H:%M:%S.")
         colour = HexFGCode(0xFF, 0xAA, 0x00) #lovely orange
         metaline = simpleml(message, colour, bg_code(BLACK))
-        self.write_metaline(metaline)
+        self.write(metaline)
         for prot in self.protocols:
             prot.connectionMade()
 
@@ -153,7 +154,7 @@ class Connector:
             self.client.close()
             message = "Client reloaded!"
         self.client = client
-        self.write_metaline(simpleml(message, colour))
+        self.write(simpleml(message, colour))
         
     def reload_client(self):
         c = ClientProtocol(self)

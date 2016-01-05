@@ -1,6 +1,7 @@
 """Utility for passing around lines with their colour information."""
 from itertools import imap
-from pymudclient.colours import HexFGCode, HexBGCode
+from pymudclient.colours import HexFGCode, HexBGCode, fg_code, WHITE, bg_code,\
+    BLACK
 
 def iadjust(ind, start, adj):
     """Moves the ind along by adj amount, unless ind is before start, when it
@@ -257,7 +258,7 @@ class Metaline(object):
 
         return metaline
 
-def simpleml(line, fore, back):
+def simpleml(line, fore = fg_code(WHITE, False), back = bg_code(BLACK)):
     """Simplified wrapper for creating simple metalines."""
     return Metaline(line, RunLengthList([(0, fore)]),
                     RunLengthList([(0, back)]))

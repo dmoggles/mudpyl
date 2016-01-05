@@ -19,7 +19,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
 
     delimiter = '\n'
 
-    def __init__(self, factory):
+    def __init__(self, factory, use_blocks = False):
         Telnet.__init__(self)
         self.commandMap[GA] = self.ga_received
         self.negotiationMap[COMPRESS2] = self.turn_on_compression
@@ -30,7 +30,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         self._colourparser = ColourCodeParser()
         self.fix_broken_godwars_line_endings = True
         self.block_builder=[]
-        self.ga_ends_block=True
+        self.ga_ends_block=use_blocks
 
     def negotiate(self, bytes):
         
@@ -48,7 +48,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         Late initialisation should also go here.
         """
         
-        self.factory.realm.connectionMade()
+        self.factory.realm.telnetConnectionMade()
         Telnet.connectionMade(self)
         LineOnlyReceiver.connectionMade(self)
     def commandReceived(self, command, argument):
@@ -138,7 +138,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         #flush out the buffer
         if self._buffer:
             self.lineReceived(self._buffer)
-        self.factory.realm.connectionLost()
+        self.factory.realm.telnetConnectionLost()
 
     def ga_received(self, _):
         """A GA's been received. We treat these kind of like line endings."""
@@ -189,14 +189,22 @@ class TelnetClientFactory(ClientFactory):
 
     """A ClientFactory that produces TelnetClients."""
 
-    def __init__(self, name, encoding, main_module_name, reactor):
+    def __init__(self, realm):
         #no __init__ here, either.
-        self.name = name
-        self.encoding = encoding
-        self.main_module_name = main_module_name
-        self.reactor = reactor
-        self.realm = RootRealm(self)
-        
+        self.realm = realm
+
+    @property
+    def encoding(self):
+        return self.realm.mod.encoding
+
+    @property
+    def use_atcp(self):
+        return getattr(self.realm.mod, "use_atcp", True)
+
+    @property
+    def to_enable(self):
+        return getattr(self.realm.mod, "to_enable", ["Char", "Char.Vitals"])
+
     protocol = TelnetClient
 
     def buildProtocol(self, addr):

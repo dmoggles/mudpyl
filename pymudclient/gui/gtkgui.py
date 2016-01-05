@@ -64,7 +64,7 @@ class GUI(gtk.Window):
         gtk.Window.__init__(self)
         self.realm = realm
         self.realm.addProtocol(self)
-        realm.factory.gui = self
+        realm.gui = self
         self.output_container = gtk.VBox()
         self.command_line = CommandView(self)
         self.output_window = OutputView(self, self.output_container)
@@ -120,7 +120,7 @@ class GUI(gtk.Window):
 
     def _make_widget_body(self):
         """Put it all together."""
-        self.set_title("%s - pymudclient" % self.realm.factory.name)
+        self.set_title("%s - pymudclient" % self.realm.mod.name)
         self.connect('destroy', self.destroy_cb)
         self.maximize() #sic
         outputbox = gtk.Table(columns=6,rows=1,homogeneous=True)
@@ -158,7 +158,7 @@ class GUI(gtk.Window):
         #outputbox.pack_start(widgetbox, expand=True)
         
         left_box = gtk.VBox()
-        left_box.pack_start(self.realm.gui)
+        left_box.pack_start(self.realm.extra_gui)
         self.output_container.pack_start(self.scrolled_out, expand=True)
         outputbox.attach(left_box, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
         outputbox.attach(self.output_container, left_attach=1, right_attach=4, top_attach=0, bottom_attach=1)
@@ -250,11 +250,11 @@ def copy_helper(text):
     r.clipboard_append(text)
     r.destroy()
 
-def configure(factory):
+def configure(realm):
     """Set the right reactor up and get the GUI going."""
-    gui = GUI(factory.realm)
+    gui = GUI(realm)
     macros = {from_string("<page up>"): gui.forward_page_up_cb,
               from_string('<page down>'): gui.forward_page_down_cb,
               from_string("C-c"): gui.maybe_forward_copy_cb}
-    factory.realm.macros.update(macros)
-    factory.realm.baked_in_macros.update(macros)
+    realm.macros.update(macros)
+    realm.baked_in_macros.update(macros)

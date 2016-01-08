@@ -8,6 +8,10 @@ from pymudclient.net.telnet import TelnetClientFactory
 import json
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import LineReceiver
+import traceback
+from pymudclient.gui.bindings import gui_macros
+from pymudclient import spawnProcessHelper
+
 
 
 class ClientProtocol(ProcessProtocol, LineReceiver):
@@ -17,11 +21,36 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
     def __init__(self, communicator):
         self.communicator = communicator
         self.messages_not_acknowledged = 0
+        self.buffering = False
+        self.buffer = ''
         
     def send_to_client(self, meth, params):
         #print('send to processor: %s, %s'%(meth, json.dumps(params)))
-        self.transport.write(json.dumps([meth, params]) + "\n")
+        line = json.dumps([meth, params])
+        if len(line)>1000:
+            self.transport.write("%buff_begin%\n")
+            while len(line)>1000:
+                self.transport.write(line[:1000]+"\n")
+                line=line[1000:]
+            self.transport.write(line+"\n")
+            self.transport.write("%buff_end%\n")
+        else:
+            self.transport.write(json.dumps([meth, params]) + "\n")
 
+    def lineReceived(self, line):
+        if line == '%buff_begin%':
+            self.buffering = True
+            self.buffer = ''
+        elif line == '%buff_end%':
+            if self.buffering == True:
+                self.lineReceived_recomposed(self.buffer)
+            self.buffering = False
+        else:
+            if self.buffering == True:
+                self.buffer += line
+            else:
+                self.lineReceived_recomposed(line)
+    
     def connectionMade(self):
         ProcessProtocol.connectionMade(self)
         LineReceiver.connectionMade(self)
@@ -31,11 +60,12 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
             self.client_started_processing_at = time.time()
         self.messages_not_acknowledged += 1
         
-    def lineReceived(self, line):
-        print('received from processor: %s'%line)
+    def lineReceived_recomposed(self, line):
         meth, rest = json.loads(line)
-        if meth == 'sent_to_mud':
-            self.communicator.telnet.sendLine(rest[0])    
+        if meth == 'send_to_mud':
+            self.communicator.telnet.sendLine(rest)   
+        elif meth == 'ping':
+            self.send_to_client('ping', []) 
         elif meth == "display_line":
             metaline = json_to_metaline(rest[0])
             soft_line_start = bool(rest[1])
@@ -84,12 +114,14 @@ class Connector:
         self._closing_down = False
         self.protocols = []
         self.extra_gui = None
-        self.macros={}
-        self.baked_in_macros={}
+        self.macros=gui_macros.copy()
+        self.baked_in_macros=gui_macros.copy()
         self.state={}
         self._last_line_end = None
         self.active_channels=['main']
         self.gmcp_handler=None
+        self.server_echo=False
+        self.processor_exec = ''
      
     
     def addProtocol(self, protocol):
@@ -146,7 +178,7 @@ class Connector:
         """We've got our user's stuff running. Benissimo!"""
         colour = HexFGCode(0xFF, 0xAA, 0x00)
         if self.telnet is None:
-            message = "Hi, welcome to mudpyl. Trying to connect..."
+            message = "Trying to connect..."
             factory = TelnetClientFactory(self)
             from twisted.internet import reactor
             reactor.connectTCP(self.mod.host, self.mod.port, factory)
@@ -159,7 +191,8 @@ class Connector:
     def reload_client(self):
         c = ClientProtocol(self)
         from twisted.internet import reactor
-        reactor.spawnProcess(c, self.mod.executable_path)
+        #reactor.spawnProcess(c, self.mod.executable_path)
+        spawnProcessHelper.spawnProcess(c, self.processor_exec)
         
         
     def metalineReceived(self, metaline, display_line = True):
@@ -169,6 +202,24 @@ class Connector:
         
     def blockReceived(self, block):
         self.client.do_block(block) 
+        
+    def maybe_do_macro(self, chord):
+        """Try and run a macro against the given keychord.
+
+        A return value of True means a macro was found and run, False means
+        no macro was found, or a macro returned True (meaning allow the GUI
+        to continue handling the keypress).
+        """
+        if chord in self.macros:
+            macro = self.macros[chord]
+            try:
+                macro(self)
+            except Exception:
+                #XXX: integrate
+                traceback.print_exc()
+            return True
+        else:
+            return False
         
     def receive_gui_line(self, string):
         """Send lines input into the GUI to the MUD.

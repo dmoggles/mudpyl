@@ -7,12 +7,12 @@
 
 import argparse
 from pymudclient.client import Connector, ClientProtocol
-from pymudclient import __version__
+from pymudclient import __version__, spawnProcessHelper
 from pymudclient.library.imperian.imperian_gui import ImperianGui
 import os
 import sys
 from twisted.python import filepath
-from twisted.internet import reactor
+
 from twisted.internet import stdio
 parser = argparse.ArgumentParser(version = "%(prog)s " + __version__, 
                                  prog = 'pymudclient')
@@ -32,41 +32,7 @@ parser.add_argument("--profile", action = "store_true",  default = False,
 
 
 
-def _spawnProcess(proto, sibling, *args, **kw):
-        """
-        Launch a child Python process and communicate with it using the
-        given ProcessProtocol.
 
-        @param proto: A L{ProcessProtocol} instance which will be connected
-        to the child process.
-
-        @param sibling: The basename of a file containing the Python program
-        to run in the child process.
-
-        @param *args: strings which will be passed to the child process on
-        the command line as C{argv[2:]}.
-
-        @param **kw: additional arguments to pass to L{reactor.spawnProcess}.
-
-        @return: The L{IProcessTransport} provider for the spawned process.
-        """
-        import twisted
-        subenv = dict(os.environ)
-        subenv['PYTHONPATH'] = os.pathsep.join(
-            [os.path.abspath(
-                    os.path.dirname(os.path.dirname(twisted.__file__))),
-             ';'.join(sys.path),
-             
-             ])
-        args = [sys.executable,
-             filepath.FilePath(__file__).sibling(sibling).path,
-             reactor.__class__.__module__] + list(args)
-        return reactor.spawnProcess(
-            proto,
-            sys.executable,
-            args,
-            env=subenv,
-            **kw) 
         
          
 def main():
@@ -85,7 +51,7 @@ def main():
         realm.extra_gui = ImperianGui(realm)
         from pymudclient.gui.gtkgui import configure
     
-    processor_exec = options.processor
+    realm.processor_exec = options.processor
     
     configure(realm)
 
@@ -99,8 +65,8 @@ def main():
         mod.configure(realm)
 
     realm.client = ClientProtocol(realm)
-    
-    sp = reactor.callWhenRunning(_spawnProcess, realm.client, processor_exec)
+    from twisted.internet import reactor
+    sp = reactor.callWhenRunning(spawnProcessHelper.spawnProcess, realm.client, realm.processor_exec)
     if not options.profile:
         reactor.run()
     else:

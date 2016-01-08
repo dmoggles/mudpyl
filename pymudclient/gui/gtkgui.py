@@ -243,7 +243,6 @@ class GUI(gtk.Window):
 
 
 def copy_helper(text):
-    '''I have no idea what I'm doing here, but it seems to work ¯\_(ツ)_/¯'''
     r = Tk()
     r.withdraw()
     r.clipboard_clear()
@@ -252,6 +251,8 @@ def copy_helper(text):
 
 def configure(realm):
     """Set the right reactor up and get the GUI going."""
+    from twisted.internet import gtk2reactor
+    gtk2reactor.install()
     gui = GUI(realm)
     macros = {from_string("<page up>"): gui.forward_page_up_cb,
               from_string('<page down>'): gui.forward_page_down_cb,

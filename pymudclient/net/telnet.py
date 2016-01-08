@@ -73,7 +73,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         elif option == ECHO:
             self.factory.realm.server_echo = True
             #hide the command line
-            self.factory.gui.command_line.set_visibility(False)
+            self.factory.realm.gui.command_line.set_visibility(False)
             return True
         else:
             return False
@@ -86,7 +86,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
             self.allow_gmcp = False
         elif option == ECHO:
             self.factory.realm.server_echo = False
-            self.factory.gui.command_line.set_visibility(True)
+            self.factory.realm.gui.command_line.set_visibility(True)
 
     def turn_on_compression(self, bytes):
         """Actually enable MCCP."""
@@ -129,6 +129,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         line = line.encode(self.factory.encoding)
         #double IAC, else it might be interpreted as a command
         line = line.replace(IAC, IAC + IAC)
+        print('sending line: %s'%line)
         return self.transport.writeSequence([line, '\r\n'])
 
     def connectionLost(self, reason):

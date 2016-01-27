@@ -8,10 +8,11 @@ import csv
 import os
 import pango
 import time
-from pymudclient.library.imperian.imperian import get_char_data
+from pymudclient.library.aetolia.aetolia import get_char_data
 from pymudclient.gui.gui_elements import BlackEventBox, FormattedLabel,\
     BlackFrame
-    
+
+
 import pymudclient.gui.gui_elements as ge
 
 TREE_BALANCE=15
@@ -54,7 +55,6 @@ class HpManaWidget(BlackEventBox):
         self.add(t)
         
     def update(self):
-        print('updating')
         self.pb.set_text('%d/%d'%(self.current, self.max))
         self.pb.set_fraction(min(float(self.current)/float(self.max),1.0))
         #self.pb.update(percentage=min(float(self.current)/float(self.max),1.0))
@@ -233,7 +233,7 @@ class CountdownBar(BlackEventBox):
             value = 1.0
             self.pb.set_fraction(1.0)
             self.pb.modify_fg(gtk.STATE_PRELIGHT, gtk.gdk.Color(ge.RED))
-        print(value)
+        
         self.pb.set_fraction(value)
             
             
@@ -378,12 +378,10 @@ class CharDataPanel(BlackEventBox):
         hbox=gtk.HBox()
         self.elements={'class':CharDataLabel('Class'),
                        'level':CharDataLabel('Level'),
-                       'statpack':CharDataLabel('Statpack'),
                        'org':CharDataLabel('Org')}
         
         hbox.pack_start(self.elements['class'],expand=True)
         hbox.pack_start(self.elements['level'],expand=True)
-        hbox.pack_start(self.elements['statpack'],expand=True)
         hbox.pack_start(self.elements['org'],expand=True)
         f.add(hbox)
         self.add(f)
@@ -391,20 +389,19 @@ class CharDataPanel(BlackEventBox):
     def set_character(self, character):
         data = get_char_data(character)
         if data:
-            self.elements['class'].set_value(data['profession'])
+            self.elements['class'].set_value(data['class'])
             self.elements['level'].set_value(data['level'])
             self.elements['org'].set_value(data['city'])
-            self.elements['statpack'].set_value(data['statpack'])
             
 class BleedPanel(BlackEventBox):
-    def __init__(self):
+    def __init__(self, max_bleed):
         BlackEventBox.__init__(self)
         f=BlackFrame('Bleed')
         t = gtk.Table(rows=1, columns = 5, homogeneous=True)
         l = FormattedLabel('Bleed')
         t.attach(l, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
         self.current=0
-        self.max = 150
+        self.max = max_bleed
         self.pb = gtk.ProgressBar()
         t.attach(self.pb, left_attach=1, right_attach=5, top_attach=0, bottom_attach=1)
         self.update()
@@ -500,7 +497,7 @@ class EnemyPanel(BlackEventBox):
         if is_here:
             self.name_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(ge.RED))
         else:
-            self.name_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(GREEN))
+            self.name_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(ge.GREEN))
     
     
     def set_shield(self, shield, state):
@@ -533,14 +530,17 @@ class SelfPanel(BlackEventBox):
         f.add(box)
         self.hp_mana = HpManaPanel()
         box.pack_start(self.hp_mana, expand=False)
-        self.bleed = BleedPanel()
+        self.bleed = BleedPanel(1000)
         box.pack_start(self.bleed, expand=False)
         self.add(f)
         
-class ImperianGui(BlackEventBox):
+class AetoliaGui(BlackEventBox):
     def __init__(self, realm):
         self.realm = realm
         self.realm.registerEventHandler('setTargetEvent', self.set_target)
+        self.realm.registerEventHandler('statUpdateEvent', self.update_stats)
+        self.realm.registerEventHandler('targetInRoomEvent', self.set_target_is_here)
+        self.realm.registerEventHandler('targetLeftRoomEvent', self.set_target_is_not_here)
         BlackEventBox.__init__(self)
         box=gtk.VBox()
         self.enemy=EnemyPanel()
@@ -552,7 +552,19 @@ class ImperianGui(BlackEventBox):
     def set_target(self, target):
         self.enemy.set_target(target)
     
-    def set_aff(self, affliction, status):
+    def update_stats(self, stat, value):
+        if stat == 'hp':
+            self.self_panel.hp_mana.set_curr_hp(value)
+        if stat == 'mp':
+            self.self_panel.hp_mana.set_curr_mana(value)
+        if stat == 'maxhp':
+            self.self_panel.hp_mana.set_max_hp(value)
+        if stat == 'maxmp':
+            self.self_panel.hp_mana.set_max_mana(value)
+        if stat == 'bleeding':
+            self.self_panel.bleed.set_current(value)
+    
+    def set_aff(self, affliction, status):    
         self.enemy.set_aff(affliction, status)
         
     def update_cooldowns(self):
@@ -560,6 +572,12 @@ class ImperianGui(BlackEventBox):
 
     def reset_cooldown(self, cd):
         self.enemy.reset_cooldown(cd)
+    
+    def set_target_is_here(self, player):
+        self.enemy.set_target_here(True)
+        
+    def set_target_is_not_here(self, player):
+        self.enemy.set_target_here(False)
     
     def set_target_here(self, is_here):
         self.enemy.set_target_here(is_here)

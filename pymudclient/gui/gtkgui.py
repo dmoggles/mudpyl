@@ -10,6 +10,7 @@ from Tkinter import Tk
 from pymudclient.gui.gtkguiwidgets import UpdatingWidgetView
 from gtk._gtk import SHRINK
 from pymudclient.library.imperian.imperian_gui import EnemyPanel
+from pymudclient.gui.gui_elements import BlackFrame, BlackEventBox
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -141,17 +142,29 @@ class GUI(gtk.Window):
         labelbox.pack_end(self.paused_label, expand = False)
         labelbox.pack_start(self.target, expand=False)
         
-        widgetbox = gtk.VBox()
-        widgethbox1 = gtk.HBox()
-        widgethbox1.pack_start(self.map)
-        widgethbox1.pack_start(gtk.VSeparator(),expand=False)
+        widgetbox = gtk.Table(columns=1,rows=2, homogeneous=True)
+        widgetbox1 = gtk.HBox()
+        widgetbox1.pack_start(self.map)
+        map_frame = BlackFrame('Map')
+        map_frame.add(widgetbox1)
+        map_box = BlackEventBox()
+        map_box.add(map_frame)
+        #widgetbox1.pack_start(gtk.VSeparator(),expand=False)
     
-        widgetbox.pack_start(widgethbox1, expand=True)
-        widgetbox.pack_start(gtk.HSeparator(), expand=False)
+        #widgetbox.pack_start(widgethbox1, expand=True)
+        #widgetbox.pack_start(gtk.HSeparator(), expand=False)
+        widgetbox.attach(map_box, 0,1,0,1)
+        #widgetbox.attach(gtk.HSeparator(),0,1,1,2, yoptions=gtk.SHRINK)
         self.scrolled_comm.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
         self.scrolled_comm.add(self.comm_widget)
-        widgetbox.pack_start(self.scrolled_comm, expand=True)
-        widgetbox.pack_start(gtk.HSeparator(), expand=False)
+        #widgetbox.pack_start(self.scrolled_comm, expand=True)
+        #widgetbox.pack_start(gtk.HSeparator(), expand=False)
+        comm_frame = BlackFrame('Comms')
+        
+        comm_frame.add(self.scrolled_comm)
+        comm_box = BlackEventBox()
+        comm_box.add(comm_frame)
+        widgetbox.attach(comm_box, 0,1,1,2)
         box = gtk.VBox()
         #outputbox.pack_start(self.scrolled_out, expand=True)
         #outputbox.pack_start(gtk.VSeparator(), expand=False)

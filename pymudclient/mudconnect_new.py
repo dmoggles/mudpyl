@@ -43,15 +43,20 @@ def main():
     """
     options = parser.parse_args()
     subenv = dict(os.environ)
-    mod = __import__(options.modulename, fromlist = ["name", "host", "port", "configure", "encoding"])
+    mod = __import__(options.modulename, fromlist = ["name", "host", "port", "configure", "encoding",
+                                                     "gmcp_handshakes", "gui_configure",
+                                                     "use_blocks"])
 
     realm = Connector(mod)
 
     if options.gui == 'gtk':
-        realm.extra_gui = ImperianGui(realm)
+        if hasattr(mod, 'gui_configure'):
+            mod.gui_configure(realm)
+        
         from pymudclient.gui.gtkgui import configure
     
     realm.processor_exec = options.processor
+    realm.module_name = options.modulename
     
     configure(realm)
 
@@ -66,7 +71,8 @@ def main():
 
     realm.client = ClientProtocol(realm)
     from twisted.internet import reactor
-    sp = reactor.callWhenRunning(spawnProcessHelper.spawnProcess, realm.client, realm.processor_exec)
+    realm.reactor = reactor
+    sp = reactor.callWhenRunning(spawnProcessHelper.spawnProcess, realm.client, realm.processor_exec, options.modulename)
     if not options.profile:
         reactor.run()
     else:

@@ -11,6 +11,8 @@ from twisted.protocols.basic import LineReceiver
 import traceback
 from pymudclient.gui.bindings import gui_macros
 from pymudclient import spawnProcessHelper
+from pymudclient.tagged_ml_parser import taggedml
+from pymudclient.gui.keychords import from_string
 
 
 
@@ -25,7 +27,6 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         self.buffer = ''
         
     def send_to_client(self, meth, params):
-        #print('send to processor: %s, %s'%(meth, json.dumps(params)))
         line = json.dumps([meth, params])
         if len(line)>1000:
             self.transport.write("%buff_begin%\n")
@@ -62,7 +63,15 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         
     def lineReceived_recomposed(self, line):
         meth, rest = json.loads(line)
-        if meth == 'send_to_mud':
+        if meth == 'ack':
+            self.messages_not_acknowledged -= 1
+            if not self.messages_not_acknowledged:
+                process_time = time.time() - self.client_started_processing_at
+                self.communicator.total_client_time += process_time
+                self.client_started_processing_at = None
+                #print('Process Time: %(process_time)d, Total Process Time: %(total_process_time)d\n'%
+                #      {'process_time':process_time, 'total_process_time':self.communicator.total_client_time})
+        elif meth == 'send_to_mud':
             self.communicator.telnet.sendLine(rest)   
         elif meth == 'ping':
             self.send_to_client('ping', []) 
@@ -70,9 +79,41 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
             metaline = json_to_metaline(rest[0])
             soft_line_start = bool(rest[1])
             self.communicator.write(metaline, soft_line_start)
+        elif meth == 'set_active_channels':
+            self.communicator.setActiveChannels(rest)
         elif meth == "hello":
+            macros = rest[0]
+            def make_macro(cmd):
+                def macro(cc):
+                    cc.client.do_alias(cmd, False)
+                return macro
+            self.communicator.macros.clear()
+            self.communicator.macros.update(dict((from_string(k), make_macro(l)) for k, l in macros.items()))
+            self.communicator.macros.update(self.communicator.baked_in_macros)
             self.communicator.clientConnectionMade(self)
-    
+        elif meth == "error":
+            if self.communicator.debug:
+                self.communicator.cwrite('<white*:red>ERROR RECEIVED: \n %s'%rest)
+            else:
+                print(rest)
+        elif meth == 'set_state':
+            self.communicator.set_state(rest[0],rest[1])
+        elif meth == 'event':
+            event_name = rest[0]
+            args = rest[1]
+            self.communicator.fireEventLocal(event_name, *args)
+        
+        elif meth == 'debug':
+            line = rest[0]
+            if self.communicator.debug:
+                self.communicator.cwrite('<grey:white>PROCESSOR DEBUG [[%s]]'%line)
+            else:
+                print('PROCESSOR DEBUG [[%s]]'%line)
+        else:
+            if self.communicator.debug:
+                self.communicator.cwrite('<white*:red>UNKNOWN METHOD RECEIVED: \n Method:%(meth)s \n Args: %(rest)s'%{'rest':rest, 'meth':meth})
+            else:
+                print('UNKNOWN METHOD RECEIVED: \n Method:%(meth)s \n Args: %(rest)s'%{'rest':rest, 'meth':meth})
     def close(self):
         self.send_to_client("close", [])
         if not self.messages_not_acknowledged:
@@ -95,10 +136,39 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         self.send_to_client('do_block', [json.dumps([metaline_to_json(l) for l in block])])
         if not self.messages_not_acknowledged:
             self.client_started_processing_at = time.time()
-        self.messages_not_acknowledges += 1
+        self.messages_not_acknowledged += 1
+        
+    def do_alias(self, line, server_echo, echo= True):
+        self.send_to_client("do_aliases", [line, int(server_echo), int(echo)])
+        if not self.messages_not_acknowledged:
+            self.client_started_processing_at = time.time()
+        self.messages_not_acknowledged += 1 
+    
+    def do_triggers(self, metaline, display_line):
+        self.send_to_client("do_triggers", [metaline_to_json(metaline), int(display_line)])
+        if not self.messages_not_acknowledged:
+            self.client_started_processing_at = time.time()
+        self.messages_not_acknowledged += 1
+    
+    def do_gmcp(self, gmcp_pair):
+        self.send_to_client("do_gmcp", [gmcp_pair])
+        if not self.messages_not_acknowledged:
+            self.client_started_processing_at = time.time()
+        self.messages_not_acknowledged += 1
+    
+    def do_event(self, eventName, *args):
+        self.send_to_client('event', [eventName, args])
+        if not self.messages_not_acknowledged:
+            self.client_started_processing_at = time.time()
+        self.messages_not_acknowledged += 1
+        
         
     def errReceived(self, data):
-        print('ERROR: %s'%data)
+        if self.communicator.debug:
+            self.communicator.cwrite('<white*:red>CORE ERROR RECEIVED: \n %s'%data)
+        else:
+            print(data) 
+       
     
     outReceived = LineReceiver.dataReceived
         
@@ -120,10 +190,17 @@ class Connector:
         self._last_line_end = None
         self.active_channels=['main']
         self.gmcp_handler=None
+        self.gmcp={}
         self.server_echo=False
         self.processor_exec = ''
-     
-    
+        self.module_name = ''
+        self.debug = True
+        self.event_handlers={}
+        self.reactor = None
+        self.total_client_time = 0
+        self.block=[]
+        
+        
     def addProtocol(self, protocol):
         self.protocols.append(protocol)
            
@@ -192,13 +269,13 @@ class Connector:
         c = ClientProtocol(self)
         from twisted.internet import reactor
         #reactor.spawnProcess(c, self.mod.executable_path)
-        spawnProcessHelper.spawnProcess(c, self.processor_exec)
+        spawnProcessHelper.spawnProcess(c, self.processor_exec, self.module_name)
         
         
     def metalineReceived(self, metaline, display_line = True):
         """Match a line against the triggers and perhaps display it on screen.
         """
-        self.client.mud_line_received(metaline, display_line)
+        self.client.do_triggers(metaline, display_line)
         
     def blockReceived(self, block):
         self.client.do_block(block) 
@@ -232,8 +309,13 @@ class Connector:
         if string.startswith('/'):
             self.console.push(string[1:])
         else:
-            self.client.user_line_received(string, self.server_echo)
-            
+            self.client.do_alias(string, self.server_echo)
+    
+    def cwrite(self, line, soft_line_start=False):
+        ml=taggedml(line)
+        self.write(ml, soft_line_start)
+        
+           
     def write(self, metaline, soft_line_start = False):
         #if self.hide_lines>0:
         #    self.hide_lines-=1
@@ -265,5 +347,35 @@ class Connector:
 
         self._last_line_end = metaline.line_end
         
+    
+    
+    def setActiveChannels(self, channels):
+        self.active_channels = channels
+        
+    def gmcpReceived(self, gmcp_pair):
+        self.client.do_gmcp(gmcp_pair)
+        
+    def set_state(self, name, value):
+        self.state[name]=value
+    
     def registerEventHandler(self, eventName, eventHandler):
-        pass
+        if not eventName in self.event_handlers:
+            self.event_handlers[eventName]=[]
+        self.event_handlers[eventName].append(eventHandler)
+        
+    def fireEvent(self, eventName, *args):
+        self.client.do_event(eventName,*args)
+        self.fireEventLocal(eventName, *args)
+    
+    def fireEventLocal(self, eventName, *args):
+        if eventName in self.event_handlers:
+            for eh in self.event_handlers[eventName]:
+                self.reactor.callLater(0, eh, *args)   
+                
+    def get_state(self, item):
+        if item in self.state:
+            return self.state[item]
+        else:
+            return ''
+    
+   

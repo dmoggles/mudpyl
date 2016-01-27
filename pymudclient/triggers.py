@@ -99,11 +99,11 @@ class LineAlterer(object):
 
 class TriggerBlockMatchingRealm(BaseMatchingRealm):
     """This is like trigger matching realm, but it operates on an entire block"""
-    def __init__(self, block, root, parent, send_line_to_mud):
-        BaseMatchingRealm.__init__(self, root, parent, send_line_to_mud)
+    def __init__(self, block, root, parent, display_group=True):
+        BaseMatchingRealm.__init__(self, root, parent)
         self.block=block
         self.alterers=[LineAlterer()]*len(self.block)
-        self.display_lines = [True]*len(self.block)
+        self.display_lines = [display_group]*len(self.block)
         self.display_group = True
         
         self.line_index=0
@@ -145,7 +145,7 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
         for indx, alterer in enumerate(self.alterers):
             metaline = alterer.apply(self.block[indx])
             '''Apply the channels that were set when actually writing'''
-            self.root.active_channels=channels[indx]
+            self.root.setActiveChannels(channels[indx])
             if self.display_lines[indx] and self.display_group:
                 self.parent.write(metaline)
             self._write_after(indx)
@@ -168,8 +168,7 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
         """Send a line to the MUD."""
         #need to spin a new realm out here to make sure that the writings from
         #the alias go after ours.
-        realm = AliasMatchingRealm(line, echo, parent = self, root = self.root,
-                                   send_line_to_mud = self.send_line_to_mud)
+        realm = AliasMatchingRealm(line, echo, parent = self, root = self.root)
         realm.process()
         
         
@@ -194,11 +193,11 @@ class TriggerMatchingRealm(BaseMatchingRealm):
     .parent, which is the Realm up one level from this one.
     """
 
-    def __init__(self, metaline, root, parent, send_line_to_mud):
-        BaseMatchingRealm.__init__(self, root, parent, send_line_to_mud)
+    def __init__(self, metaline, root, parent, display_line):
+        BaseMatchingRealm.__init__(self, root, parent)
         self.metaline = metaline
         self.alterer = LineAlterer()
-        self.display_line = True
+        self.display_line = display_line
         self.display_group = True
         self.block=[metaline]
         self.line_index=0
@@ -214,6 +213,5 @@ class TriggerMatchingRealm(BaseMatchingRealm):
         """Send a line to the MUD."""
         #need to spin a new realm out here to make sure that the writings from
         #the alias go after ours.
-        realm = AliasMatchingRealm(line, echo, parent = self, root = self.root,
-                                   send_line_to_mud = self.send_line_to_mud)
+        realm = AliasMatchingRealm(line, echo, parent = self, root = self.root)
         realm.process()

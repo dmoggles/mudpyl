@@ -36,17 +36,17 @@ body {
 
     colour_change = '''</span><span style="color: #%s; background: #%s">'''
 
-    def __init__(self, realm, logformat):
+    def __init__(self, client, logformat):
         self.fore = fg_code(WHITE, False)
         self.back = bg_code(BLACK)
-        self.realm = realm
+        self.client = client
         self._dirty = False
-        realm.addProtocol(self)
-        logname=time.strftime(logformat)%{'name':self.realm.factory.name}
+        client.addProtocol(self)
+        logname=time.strftime(logformat)%{'name':self.client.mod.name}
         if not os.path.exists(os.path.dirname(logname)):
             os.makedirs(os.path.dirname(logname))
         self.log = open(time.strftime(logformat) % 
-                                   {'name': self.realm.factory.name}, 'w+')
+                                   {'name': self.client.mod.name}, 'w+')
         self.log.write(self.log_preamble)
 
     def write_out_span(self, span):
@@ -118,16 +118,14 @@ body {
         if line:
             self.write_out_span(line)
 
-class HTMLLoggingModule(BaseModule):
+class HTMLLoggingModule():
     """A module that logs to disk."""
 
     #defaultly log to a file in ~/logs/
-    
-    logplace = os.path.join(os.path.expanduser('~'), 'logs',
+    def __init__(self, client, logplace=None):
+        if logplace == None:
+            logplace = os.path.join(os.path.expanduser('~'), 'logs',
                             '%%(name)s/log_%Y_%m_%d__%H_%M_%S.html')
+            HTMLLogOutput(client, logplace)
 
-    def is_main(self, realm):
-        """Open up the HTML log."""
-        #automatically adds itself to the outputs list
-        HTMLLogOutput(realm, self.logplace)
 

@@ -1,10 +1,16 @@
 from twisted.protocols.basic import LineReceiver
 from pymudclient.escape_parser import EscapeParser
 import json
-from pymudclient.metaline import json_to_metaline, metaline_to_json
+from pymudclient.metaline import json_to_metaline, metaline_to_json, simpleml,\
+    Metaline
 from twisted.internet.task import LoopingCall
 from operator import attrgetter
-
+from zope.interface.declarations import implementedBy
+from pymudclient.triggers import TriggerMatchingRealm, TriggerBlockMatchingRealm
+from pymudclient.colours import fg_code, WHITE, bg_code, BLACK
+from pymudclient.aliases import AliasMatchingRealm
+import traceback
+from pymudclient.tagged_ml_parser import taggedml
 
 
 class MudProcessor(LineReceiver):
@@ -21,10 +27,20 @@ class MudProcessor(LineReceiver):
         self.missed_heartbeats = 0
         self.heartbeat_lc = None
         self.settings_directory=''
-        
+        self.server_echo = True
         self.triggers = []
         self.aliases = []
         self.gmcp_events = []
+        self.gmcp={}
+        self.last_command_sent = ''
+        self.root=self
+        self.tracing = False
+        self.active_channels = ['main']
+        self.state={}
+        self.event_handlers={}
+        self.reactor = None
+        self.block=[]
+        
         
     def heartbeat(self):
         self.missed_heartbeats+=1
@@ -101,15 +117,32 @@ class MudProcessor(LineReceiver):
             self.send_to_client('send_to_mud', line)
         elif meth == 'do_block':
             lines = json.loads(rest[0])
+            block = []
             for l in lines:
-                #self.transport.write(json.dumps(['display_line',[l]])+'\n')
-                self.send_to_client('display_line',[l,1])
-            
+                block.append(json_to_metaline(l))
+            self.blockReceived(block)
         
+        elif meth == 'do_triggers':
+            metaline=json_to_metaline(rest[0])
+            display_line = bool(rest[1])
+            self.metalineReceived(metaline, display_line)
+        
+        elif meth == 'do_aliases':
+            line = rest[0]
+            self.server_echo = bool(rest[1])
+            echo = bool(rest[2])
+            self.parseSend(line, echo)
+        elif meth == 'do_gmcp':
+            pair = rest[0]
+            gmcp_key,gmcp_data = pair
+            self.gmcp[gmcp_key]=gmcp_data
+            for gmcp_event in self.gmcp_events:
+                gmcp_event(pair, self)
         else:
             raise ValueError("bad line: %s" % line)
         #self.transport.write(json.dumps(["ack", [meth,rest]]) + "\n")
         self.send_to_client('ack', [meth,rest])
+    
     
     
     def load_module(self, cls, _sort = True):
@@ -121,6 +154,149 @@ class MudProcessor(LineReceiver):
             self.load_module(mod, _sort = False)
         if _sort:
             self.triggers.sort(key = attrgetter("sequence"))
-            self.gmcp_triggers.sort(key = attrgetter("sequence"))
+            self.gmcp_events.sort(key = attrgetter("sequence"))
             self.aliases.sort(key = attrgetter("sequence"))
         return robmod
+    
+    def registerEventHandler(self, eventName, eventHandler):
+        if not eventName in self.event_handlers:
+            self.event_handlers[eventName]=[]
+        self.event_handlers[eventName].append(eventHandler)
+    
+    
+    def fireEvent(self, eventName, *args):
+        self.send_to_client('event', [eventName,args])
+        self.fireEventLocal(eventName, *args)
+    
+    def fireEventLocal(self, eventName, *args):
+        if eventName in self.event_handlers:
+            for eh in self.event_handlers[eventName]:
+                self.reactor.callLater(0, eh, *args)   
+                
+    def get_state(self, item):
+        if item in self.state:
+            return self.state[item]
+        else:
+            return ''
+        
+    def set_state(self, name, value):
+        self.state[name]=value
+        self.send_to_client('set_state', [name,value])
+        
+    def metalineReceived(self, metaline, display_line):
+        realm = TriggerMatchingRealm(metaline, parent = self, root = self,
+                                     display_line = display_line)
+        try:
+            realm.process()
+        except:
+            self.handle_exception(traceback.format_exc())
+    
+    def cwrite(self, line, display_line=True):
+        ml=taggedml(line)
+        self.write(ml, display_line)
+        
+    def write(self, line, display_line = True):
+        if not isinstance(line, (basestring, Metaline)):
+            line = str(line)
+        if isinstance(line, basestring):
+            metaline = simpleml(line, fg_code(WHITE, False), bg_code(BLACK))
+            metaline.wrap = False
+        else:
+            metaline = line
+        self.send_to_client('display_line', [metaline_to_json(metaline),int(display_line)])
+    
+    def send_mud(self, line):
+        self.last_command_sent = line
+        self.send_to_client('send_to_mud', line)
+        
+    def send(self, line, echo = True):
+        """Match aliases against the line and perhaps send it to the MUD."""
+        echo = not self.server_echo and echo
+        realm = AliasMatchingRealm(line, echo, parent = self, root = self)
+        try:       
+            realm.process()
+        except:
+            self.handle_exception(traceback.format_exc())
+        
+    def parseSend(self, string, echo):
+        for line in list(self._escape_parser.parse(string + '\n')):
+            self.send(line, echo)
+            
+    def setActiveChannels(self, channels):
+        self.active_channels = channels
+        self.send_to_client('set_active_channels', channels)
+        
+    def handle_exception(self, trace):
+        self.send_to_client('error', trace)
+        
+        
+    def blockReceived(self, block):
+        self.block = block 
+        realm = TriggerBlockMatchingRealm(self.block, parent = self, root = self, 
+                                          display_group=True)
+        realm.process()
+    
+    def set_timer(self, time, fn, *args, **kwargs):
+        from twisted.internet import reactor
+        realm = TimerRealm(self)
+        timer = self.reactor.callLater(time, fn, realm, *args, **kwargs)
+        return timer
+    
+    def debug(self, msg):
+        self.send_to_client('debug', [msg])
+        
+    def trace(self, line):
+        """Write the argument to the screen if we are tracing, elsewise do
+        nothing.
+        """
+        if self.tracing:
+            self.write("TRACE: " + line)
+
+    def trace_thunk(self, thunk):
+        """If we're tracing, call the thunk and write its result to the
+        outputs. If not, do nothing.
+        """
+        if self.tracing:
+            self.write("TRACE: " + thunk())
+            
+            
+class TimerRealm(object):
+
+    def __init__(self, root):
+        self.root = self.parent = root
+    
+    def send(self, line, echo = False):
+        self.parent.send(line, echo)
+
+    def send_gmcp(self, meth, obj = None):
+        self.parent.send_gmcp(meth, obj)
+
+    def cwrite(self, *args, **kwargs):
+        self.parent.cwrite(*args, **kwargs)
+        
+    def write(self, *args, **kwargs):
+        self.parent.write(*args, **kwargs)
+
+    def write_now(self, *args, **kwargs):
+        self.parent.write_now(*args, **kwargs)
+
+    def trace(self, *args, **kwargs):
+        self.parent.trace(*args, **kwargs)
+
+    def trace_thunk(self, *args, **kwargs):
+        self.parent.trace_thunk(*args, **kwargs)
+
+    def set_timer(self, *args, **kwargs):
+        return self.parent.set_timer(*args, **kwargs)
+    
+    def fireEvent(self, eventName, *args):
+        return self.parent.fireEvent(eventName, *args)
+
+    def queue(self):
+        self.parent.queue()
+
+    def flush(self):
+        self.parent.flush()
+
+    def parseSend(self, line, echo = False):
+        self.parent.parseSend(line, echo)

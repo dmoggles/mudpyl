@@ -62,19 +62,19 @@ class PlayerTracker(BaseModule):
     def on_room_players(self, gmcp_data, realm):
         self.players=[str(p['name']).lower() for p in gmcp_data]
         self.output_to_window(realm)
-        if realm.root.gui:
-            target = realm.root.get_state("target").lower()
-            if target in self.players:
-                realm.root.gui.set_target_here(True)
-            else:
-                realm.root.gui.set_target_here(False)
+        #if realm.root.gui:
+        #    target = realm.root.get_state("target").lower()
+        #    if target in self.players:
+        #        realm.root.gui.set_target_here(True)
+        #    else:
+        #        realm.root.gui.set_target_here(False)
             
         
     def output_to_window(self,realm):
         my_active_channels=realm.active_channels
-        realm.active_channels=['players']
+        realm.setActiveChannels(['players'])
         realm.cwrite(self.getPlayerWidgetStringHorizontal())
-        realm.active_channels=my_active_channels
+        realm.setActiveChannels(my_active_channels)
         if self.target not in self.players and not self.target=='' and not self.manual_target:
             realm.cwrite(('<white*:red>Target <blue*:red>%s <white*:red>no longer in the room!\n'%self.target)*2)
             
@@ -84,16 +84,22 @@ class PlayerTracker(BaseModule):
         self.players.append(str(gmcp_data['name']).lower())
         self.output_to_window(realm)
         #change gui color
-        if realm.root.gui and realm.root.get_state('target').lower()==str(gmcp_data['name']).lower():
-            realm.root.gui.set_target_here(True)
+        if realm.root.get_state('target').lower()==str(gmcp_data['name']).lower():
+            realm.fireEvent('targetInRoomEvent',realm.root.get_state('target'))
         
     @binding_gmcp_event('Room.RemovePlayer')
     def on_room_remove_player(self, gmcp_data, realm):
         print(gmcp_data)
         print(self.players)
-        name=str(gmcp_data)[1:-1]
-        if realm.root.gui and realm.root.get_state('target').lower()==name.lower():
-            realm.root.gui.set_target_here(False)
+        #realm.root.debug('PlayerRemove: %s'%gmcp_data)
+        name=(str(gmcp_data)[1:-1]).lower()
+        #realm.root.debug('PlayerName: %s'%name)
+        if realm.root.get_state('target').lower()==name.lower():
+            realm.fireEvent('targetLeftRoomEvent', realm.root.get_state('target'))
+        realm.debug('Players: %(players)s, player: %(player)s, Found:%(found)d'%{'players':str(self.players),
+                                                                                 'player':name.lower(),
+                                                                                 'found':1 if name.lower() in self.players else 0
+                                                                                 })
         if name.lower() in self.players:
             self.players.remove(name)
             self.output_to_window(realm)

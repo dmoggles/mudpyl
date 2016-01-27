@@ -6,7 +6,7 @@ from pymudclient.net.nvt import ColourCodeParser, make_string_sane
 from pymudclient.net.mccp import MCCPTransport, COMPRESS2
 from pymudclient.realms import RootRealm
 import re
-from pymudclient.net.gmcp import GMCP
+from pymudclient.net.gmcp import GMCP, GmcpHandler
 
 broken_line_ending_pattern = re.compile("([^\r]|^)\n\r")
 
@@ -19,7 +19,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
 
     delimiter = '\n'
 
-    def __init__(self, factory, use_blocks = False):
+    def __init__(self, factory):
         Telnet.__init__(self)
         self.commandMap[GA] = self.ga_received
         self.negotiationMap[COMPRESS2] = self.turn_on_compression
@@ -30,7 +30,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         self._colourparser = ColourCodeParser()
         self.fix_broken_godwars_line_endings = True
         self.block_builder=[]
-        self.ga_ends_block=use_blocks
+       
 
     def negotiate(self, bytes):
         
@@ -54,8 +54,8 @@ class TelnetClient(Telnet, LineOnlyReceiver):
     def commandReceived(self, command, argument):
         
         Telnet.commandReceived(self, command, argument)
-        if argument==GMCP and command == WILL and self.factory.realm.gmcp_handler:
-            for msg in self.factory.realm.gmcp_handler.handshakeMessages():
+        if argument==GMCP and command == WILL:
+            for msg in self.factory.gmcp_handshakes:
                 self.requestNegotiation(GMCP, msg)
             
             
@@ -96,8 +96,8 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         self.transport.their_mccp_active = True
         
     def handle_gmcp(self, bytes):
-        if self.allow_gmcp == True and self.factory.realm.gmcp_handler:
-            self.factory.realm.gmcp_handler.process(bytes,self.factory.realm)
+        if self.allow_gmcp == True:
+            GmcpHandler.process(bytes,self.factory.realm)
         
     def unhandledSubnegotiation(self, command, bytes):
         print("Unhandled subnegotiation %d"%ord(command))
@@ -157,7 +157,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         """
         line = line.decode(self.factory.encoding)
         metaline = self._colourparser.parseline(make_string_sane(line))
-        if not self.ga_ends_block:
+        if not self.factory.use_blocks:
             if from_ga:
                 metaline.line_end = 'soft'
             else:
@@ -206,6 +206,20 @@ class TelnetClientFactory(ClientFactory):
     def to_enable(self):
         return getattr(self.realm.mod, "to_enable", ["Char", "Char.Vitals"])
 
+    @property
+    def gmcp_handshakes(self):
+        if hasattr(self.realm.mod, 'gmcp_handshakes'):
+            return self.realm.mod.gmcp_handshakes
+        else:
+            return None
+
+    @property 
+    def use_blocks(self):
+        if hasattr(self.realm.mod, 'use_blocks'):
+            return self.realm.mod.use_blocks
+        else:
+            return False
+        
     protocol = TelnetClient
 
     def buildProtocol(self, addr):

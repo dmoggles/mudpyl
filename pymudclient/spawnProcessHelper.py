@@ -35,8 +35,10 @@ def spawnProcess(proto, sibling, *args, **kw):
              
              ])
         args = [sys.executable,
-             filepath.FilePath(__file__).sibling(sibling).path,
-             reactor.__class__.__module__] + list(args)
+             filepath.FilePath(__file__).sibling(sibling).path#,
+             #reactor.__class__.__module__] 
+             ]+ list(args)
+        print(args)
         return reactor.spawnProcess(
             proto,
             sys.executable,

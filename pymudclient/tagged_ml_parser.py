@@ -17,23 +17,26 @@ def taggedml(line, default_fg=WHITE, default_bg=BLACK):
     fg=RunLengthList([(0,fg_code(default_fg,False))])
     bg=RunLengthList([(0,bg_code(default_bg))])
     for m in matches:
-        m_idx=line.find(m,index)
-        new_line=new_line+line[index:m_idx]
         color_tag=m[1:-1].split(':')
-         
         fg_color_str=color_tag[0]
         if '*' in fg_color_str:
             bold=True
             fg_color_str=fg_color_str.replace('*','')
         else:
             bold=False
-        
-        
         if len(color_tag)==2:
             bg_color_str=color_tag[1]
         else:
             bg_color_str=None
+        if not hasattr(colours, fg_color_str.upper()):
+            continue
+        if bg_color_str!=None and not hasattr(colours, bg_color_str.upper()):
+            continue
+        m_idx=line.find(m,index)
+        new_line=new_line+line[index:m_idx]
+       
         try:
+            
             fg_color=getattr(colours, fg_color_str.upper())
             if bg_color_str!=None:
                 bg_color=getattr(colours, bg_color_str.upper())

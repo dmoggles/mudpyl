@@ -10,8 +10,6 @@ import pymudclient
 
 
 GMCP = chr(201)
-GMCP_HANDSHAKE_1='Core.Hello { "client": "pymudclient", "version": "'+ pymudclient.__version__ +'" }'
-GMCP_HANDSHAKE_2='Core.Supports.Set [ "Core 1", "Char 1", "Char.Name 1", "Char.Skills 1", "Char.Items 1", "Comm.Channel 1", "Redirect 1", "Room 1", "IRE.Rift 1", "IRE.Composer 1" ]'
 GMCP_PING='Core.Ping'
 
 
@@ -19,12 +17,12 @@ decoder = re.compile('^([A-Za-z\.]*) (({|\[).*(}|\]))$')
 string_decoder = re.compile('^([A-Za-z\.]*) (\"\w+\")$')
 
 
-class ImperianGmcpHandler:
+class GmcpHandler:
     '''TODO: Better handling of unsupported gmcp types'''
         
-    @staticmethod
-    def handshakeMessages():
-        return [GMCP_HANDSHAKE_1,GMCP_HANDSHAKE_2]
+    #@staticmethod
+    #def handshakeMessages():
+    #    return [GMCP_HANDSHAKE_1,GMCP_HANDSHAKE_2]
     @staticmethod
     def process(bytes,realm):
         data_string = ''.join(bytes)

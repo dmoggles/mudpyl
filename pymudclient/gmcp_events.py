@@ -48,7 +48,9 @@ class GmcpEvent:
         if self.func is not None and self.func.func_name != 'func':
             args.append(self.func.func_name)
         args.append('sequence = %d' % self.sequence)
-        return '<%s>' % ' '.join(args)   
+        return '<%s>' % ' '.join(args)  
+    
+     
 
 binding_gmcp_event = make_decorator(GmcpEvent, BindingPlaceholder,False)
 non_binding_gmcp_event = make_decorator(GmcpEvent, NonbindingPlaceholder, False)

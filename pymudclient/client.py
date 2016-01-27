@@ -199,6 +199,7 @@ class Connector:
         self.reactor = None
         self.total_client_time = 0
         self.block=[]
+        self.user_echo = True
         
         
     def addProtocol(self, protocol):
@@ -309,7 +310,9 @@ class Connector:
         if string.startswith('/'):
             self.console.push(string[1:])
         else:
-            self.client.do_alias(string, self.server_echo)
+            
+        
+            self.client.do_alias(string, self.server_echo, self.user_echo)
     
     def cwrite(self, line, soft_line_start=False):
         ml=taggedml(line)

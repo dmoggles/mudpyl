@@ -2,6 +2,7 @@ from pymudclient.library.html import HTMLLoggingModule
 from pymudclient.library.imperian.imperian_gui import ImperianGui
 from pymudclient.modules import BaseModule
 import pymudclient
+from pymudclient.library.accessibility import ScreenreaderProtocol
 name = 'Alesei'
 host = 'imperian.com'
 port = 23
@@ -12,6 +13,7 @@ use_blocks = True
 
 def configure(realm):
     HTMLLoggingModule(realm)
+    #ScreenreaderProtocol(realm)
     
     
 def gui_configure(realm):

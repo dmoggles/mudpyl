@@ -58,3 +58,6 @@ target/
 *.project
 .pydevproject
 *.bak
+*.prefs
+pymudclient/client.py.orig
+*.orig

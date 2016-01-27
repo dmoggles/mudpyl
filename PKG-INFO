@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: pymudclient
-Version: 0.4
+Version: 0.2.0
 Summary: Python MUD client
 Home-page: https://github.com/dmoggles/pymudclient
 Author: Dmitry Mogilevsky

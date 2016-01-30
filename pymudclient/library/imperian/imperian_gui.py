@@ -10,7 +10,7 @@ import pango
 import time
 from pymudclient.library.imperian.imperian import get_char_data
 from pymudclient.gui.gui_elements import BlackEventBox, FormattedLabel,\
-    BlackFrame
+    BlackFrame, HpManaWidget, HpManaPanel
     
 import pymudclient.gui.gui_elements as ge
 
@@ -40,58 +40,8 @@ GUI_CURES=['orphine',
 
 
 
-class HpManaWidget(BlackEventBox):
-    def __init__(self, name):
-        BlackEventBox.__init__(self)
-        t = gtk.Table(rows=1, columns = 5, homogeneous=True)
-        l = FormattedLabel(name)
-        t.attach(l, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
-        self.current=100
-        self.max = 100
-        self.pb = gtk.ProgressBar()
-        t.attach(self.pb, left_attach=1, right_attach=5, top_attach=0, bottom_attach=1)
-        self.update()
-        self.add(t)
-        
-    def update(self):
-        print('updating')
-        self.pb.set_text('%d/%d'%(self.current, self.max))
-        self.pb.set_fraction(min(float(self.current)/float(self.max),1.0))
-        #self.pb.update(percentage=min(float(self.current)/float(self.max),1.0))
-    
-    def set_max(self, value):
-        self.max=value
-        self.update()
-        
-    def set_current(self, value):
-        self.current=value
-        self.update()
 
-class HpManaPanel(BlackEventBox):
-    def __init__(self):
-        BlackEventBox.__init__(self)
-        f = BlackFrame('Hp/Mana')
-        vbox=gtk.VBox()
-        self.hp = HpManaWidget('HP')
-        self.mana = HpManaWidget('Mana')
-        vbox.pack_start(self.hp, expand=True)
-        vbox.pack_start(self.mana, expand=True)
-        f.add(vbox)
-        self.add(f)
-        
-    def set_curr_hp(self, value):
-        self.hp.set_current(value)
-    
-    def set_max_hp(self, value):
-        self.hp.set_max(value)
-        
-    def set_curr_mana(self, value):
-        self.mana.set_current(value)
-        
-    def set_max_mana(self, value):
-        self.mana.set_max(value)
-        
-    
+
         
 class AffLabel(BlackEventBox):
     def __init__(self,name,short_name,light):
@@ -473,7 +423,7 @@ class LimbDamagePanel(BlackEventBox):
         return self.limbs[k] if k in self.limbs else None
         
 class EnemyPanel(BlackEventBox):
-    def __init__(self):
+    def __init__(self, client):
         BlackEventBox.__init__(self)
         f=BlackFrame('Enemy')
         box = gtk.VBox()
@@ -491,7 +441,7 @@ class EnemyPanel(BlackEventBox):
         self.add(f)
         self.shield = ShieldBox()
         box.pack_start(self.shield, expand=False)
-        self.hp_mana = HpManaPanel()
+        self.hp_mana = HpManaPanel("Target", client)
         box.pack_start(self.hp_mana, expand=False)
         self.limb_panel=LimbDamagePanel()
         box.pack_start(self.limb_panel, expand=False)
@@ -525,13 +475,13 @@ class EnemyPanel(BlackEventBox):
         self.cooldown_panel.reset_one(cd)
 
 class SelfPanel(BlackEventBox):
-    def __init__(self):
+    def __init__(self, client):
         BlackEventBox.__init__(self)
         f=BlackFrame('Self')
         
         box = gtk.VBox()
         f.add(box)
-        self.hp_mana = HpManaPanel()
+        self.hp_mana = HpManaPanel('Self', client)
         box.pack_start(self.hp_mana, expand=False)
         self.bleed = BleedPanel()
         box.pack_start(self.bleed, expand=False)
@@ -540,15 +490,33 @@ class SelfPanel(BlackEventBox):
 class ImperianGui(BlackEventBox):
     def __init__(self, realm):
         self.realm = realm
+        #self.realm.registerEventHandler('setTargetEvent', self.set_target)
+        #self.realm.registerEventHandler('statUpdateEvent', self.update_stats)
+        #self.realm.registerEventHandler('targetInRoomEvent', self.set_target_is_here)
+        #self.realm.registerEventHandler('targetLeftRoomEvent', self.set_target_is_not_here)
+        
         self.realm.registerEventHandler('setTargetEvent', self.set_target)
         BlackEventBox.__init__(self)
         box=gtk.VBox()
-        self.enemy=EnemyPanel()
-        self.self_panel=SelfPanel()
+        self.enemy=EnemyPanel(realm)
+        self.self_panel=SelfPanel(realm)
         box.pack_start(self.self_panel, expand=True)
         box.pack_start(self.enemy, expand=True)
         self.add(box)
         
+    
+    def update_stats(self, stat, value):
+        if stat == 'hp':
+            self.self_panel.hp_mana.set_curr_hp(value)
+        if stat == 'mp':
+            self.self_panel.hp_mana.set_curr_mana(value)
+        if stat == 'maxhp':
+            self.self_panel.hp_mana.set_max_hp(value)
+        if stat == 'maxmp':
+            self.self_panel.hp_mana.set_max_mana(value)
+        if stat == 'bleeding':
+            self.self_panel.bleed.set_current(value)
+            
     def set_target(self, target):
         self.enemy.set_target(target)
     
@@ -566,6 +534,11 @@ class ImperianGui(BlackEventBox):
         
     def set_shield(self, shield, state):
         self.enemy.set_shield(shield, state)
+    
+    def set_target_is_here(self, player):
+        self.enemy.set_target_here(True)
         
+    def set_target_is_not_here(self, player):
+        self.enemy.set_target_here(False)
     def all_shields_off(self):
         self.enemy.all_shields_off()

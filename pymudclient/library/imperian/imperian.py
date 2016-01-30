@@ -86,18 +86,16 @@ class ImperianModule(BaseModule):
         realm.root.set_state('maxhp',mhp)
         realm.root.set_state('maxmp',mmp)
         
-        #if realm.root.gui:
-        #    realm.root.gui.self_panel.hp_mana.set_curr_hp(hp)
-        #    realm.root.gui.self_panel.hp_mana.set_curr_mana(mp)
-        #    realm.root.gui.self_panel.hp_mana.set_max_hp(mhp)
-        #    realm.root.gui.self_panel.hp_mana.set_max_mana(mmp)
+        realm.root.fireEvent('selfStatUpdateEvent','hp',hp)
+        realm.root.fireEvent('selfStatUpdateEvent','mana',mp)
+        realm.root.fireEvent('selfStatUpdateEvent','hp_max',mhp)
+        realm.root.fireEvent('selfStatUpdateEvent','mana_max',mmp)
     
     @binding_trigger('^Your wounds cause you to bleed (\d+) health\.$')
     def bleeding(self, match, realm):
         bleed=int(match.group(1))
         realm.root.set_state('bleed',bleed)
-        #if realm.root.gui:
-        #    realm.root.gui.self_panel.bleed.set_current(bleed)
+        realm.root.fireEvent('statUpdateEvent','bleeding',bleed)
             
                   
         

@@ -40,6 +40,8 @@ class MudProcessor(LineReceiver):
         self.event_handlers={}
         self.reactor = None
         self.block=[]
+        self.queue_to_send=[]
+        self.connected=False
         
         
     def heartbeat(self):
@@ -58,22 +60,29 @@ class MudProcessor(LineReceiver):
         
     def connectionMade(self):
         self.log.write('ConnectionMade\n')
+        self.connected = True
         self.transport.write(json.dumps(["hello", [self.macros]]) + "\n")
         self.heartbeat_lc = LoopingCall(self.heartbeat)
         self.heartbeat_lc.start(10)
+        
+        for meth,params in self.queue_to_send:
+            self.send_to_client(meth, params)
     
     def send_to_client(self, meth, params):
         #print('send to processor: %s, %s'%(meth, json.dumps(params)))
-        line = json.dumps([meth, params])
-        if len(line)>1000:
-            self.transport.write("%buff_begin%\n")
-            while len(line)>1000:
-                self.transport.write(line[:1000]+"\n")
-                line=line[1000:]
-            self.transport.write(line+"\n")
-            self.transport.write("%buff_end%\n")
+        if self.connected:
+            line = json.dumps([meth, params])
+            if len(line)>1000:
+                self.transport.write("%buff_begin%\n")
+                while len(line)>1000:
+                    self.transport.write(line[:1000]+"\n")
+                    line=line[1000:]
+                self.transport.write(line+"\n")
+                self.transport.write("%buff_end%\n")
+            else:
+                self.transport.write(json.dumps([meth, params]) + "\n")
         else:
-            self.transport.write(json.dumps([meth, params]) + "\n")
+            self.queue_to_send.append((meth,params))
 
     
     def lineReceived(self, line):

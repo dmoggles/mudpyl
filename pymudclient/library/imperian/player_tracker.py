@@ -71,10 +71,7 @@ class PlayerTracker(BaseModule):
             
         
     def output_to_window(self,realm):
-        my_active_channels=realm.active_channels
-        realm.setActiveChannels(['players'])
-        realm.cwrite(self.getPlayerWidgetStringHorizontal())
-        realm.setActiveChannels(my_active_channels)
+        realm.cwrite(self.getPlayerWidgetStringHorizontal(), channels = 'players')
         if self.target not in self.players and not self.target=='' and not self.manual_target:
             realm.cwrite(('<white*:red>Target <blue*:red>%s <white*:red>no longer in the room!\n'%self.target)*2)
             
@@ -96,10 +93,6 @@ class PlayerTracker(BaseModule):
         #realm.root.debug('PlayerName: %s'%name)
         if realm.root.get_state('target').lower()==name.lower():
             realm.fireEvent('targetLeftRoomEvent', realm.root.get_state('target'))
-        realm.debug('Players: %(players)s, player: %(player)s, Found:%(found)d'%{'players':str(self.players),
-                                                                                 'player':name.lower(),
-                                                                                 'found':1 if name.lower() in self.players else 0
-                                                                                 })
         if name.lower() in self.players:
             self.players.remove(name)
             self.output_to_window(realm)

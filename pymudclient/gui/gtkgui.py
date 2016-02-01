@@ -100,7 +100,8 @@ class GUI(gtk.Window):
         #GTK does all the destruction for us.
         pass
 
-    def metalineReceived(self, metaline, channels):
+    def metalineReceived(self, metaline):
+        channels = metaline.channels
         if not 'map' in channels and len(self.map_buffer)>0:
             self.map.writeLines(self.map_buffer)
             self.map_buffer=[]

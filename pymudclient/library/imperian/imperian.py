@@ -50,7 +50,7 @@ class ImperianModule(BaseModule):
     @property
     def triggers(self):
         return [self.on_map_header,
-                self.on_map_footer,
+                #self.on_map_footer,
                 self.pipes,
                 self.bleeding]
     
@@ -107,22 +107,27 @@ class ImperianModule(BaseModule):
         
     @binding_gmcp_event('Redirect.Window')
     def on_map_redirect(self, gmcp_data, realm):
-        realm.root.active_channels=[gmcp_data]
+        realm.root.setActiveChannels([gmcp_data])
     
-    @binding_trigger('-+(?: (?:.+) )?-+ v\d+ -+')
+    @binding_trigger('^\-\-\-(.*) v(\d+) (.*)\-\-\-$')
     def on_map_header(self, matches, realm):
+        block = realm.block
+        start_line = realm.line_index
+        for i in xrange(start_line, start_line + 25): #MASSIVE HACK, THIS ONLY WORKS WITH 
+                                                      #RADIUS 5
+            block[i].channels=['map']
         #inner_text = matches.group(1).lower()
         #if 'announcement' in inner_text: #hacky to avoid announcement lines that look similar
         #    return
-        realm.root.active_channels=['map']
-        self.map_mode=True
+        #realm.root.setActiveChannels(['map'])
+        #self.map_mode=True
         
-    @binding_trigger("-+(?: .+ )?-* [-\d]+\:[-\d]+\:[-\d]+ -+")
-    def on_map_footer(self, matches, realm):
-        realm.display_line=False
-        realm.root.write(realm.metaline)
-        realm.root.active_channels=['main']
-        self.map_mode=False
+    #@binding_trigger("-+(?: .+ )?-* [-\d]+\:[-\d]+\:[-\d]+ -+")
+    #def on_map_footer(self, matches, realm):
+    #    realm.display_line=False
+    #    realm.root.write(realm.metaline)
+    #    realm.root.setActiveChannels(['main'])
+    #    self.map_mode=False
     
     
     @binding_alias('^show_gmcp(?: ((?:\w|\.)+))?$')

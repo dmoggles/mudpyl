@@ -26,9 +26,9 @@ class ChannelHandler(BaseModule):
         start_line = realm.line_index
         active_channels = realm.root.active_channels
         #realm.root.active_channels=['comm']
-        realm.root.setActiveChannels(['comm'])
+        #realm.root.setActiveChannels(['comm'])
         for i in xrange(start_line, len(block)-1):
-            realm.root.write(block[i])
-        realm.root.setActiveChannels(active_channels)
+            block[i].channels = active_channels + ['comm']
+        #realm.root.setActiveChannels(active_channels)
         
         

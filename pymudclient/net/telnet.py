@@ -157,6 +157,7 @@ class TelnetClient(Telnet, LineOnlyReceiver):
         """
         line = line.decode(self.factory.encoding)
         metaline = self._colourparser.parseline(make_string_sane(line))
+        metaline.channels = self.factory.realm.active_channels
         if not self.factory.use_blocks:
             if from_ga:
                 metaline.line_end = 'soft'

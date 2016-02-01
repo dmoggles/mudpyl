@@ -75,11 +75,12 @@ body {
         pass
     connectionLost = connectionMade
 
-    def metalineReceived(self, metaline,channels):
+    def metalineReceived(self, metaline):
         """Write the line to the logs.
         
         This breaks the string up into coloured chunks, and feeds them to
         the log separately."""
+        channels = metaline.channels
         if len(channels)>0 and not 'main' in channels:
             return
         if metaline.line[0]=='\n':

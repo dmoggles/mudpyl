@@ -150,14 +150,16 @@ def metaline_to_json(metaline):
     return [metaline.line,
             [(p, (c.red, c.green, c.blue)) for p, c in metaline.fores.items()],
             [(p, (c.red, c.green, c.blue)) for p, c in metaline.backs.items()],
+            metaline.channels,
             {"wrap": int(metaline.wrap), "line_end": metaline.line_end, "soft_line_start": int(metaline.soft_line_start)}]
 
 def json_to_metaline(jsonobj):
-    line, fores, backs = jsonobj[0:3]
+    line, fores, backs, channels = jsonobj[0:4]
     fores = RunLengthList([(int(p), HexFGCode(*t)) for p, t in fores])
     backs = RunLengthList([(int(p), HexBGCode(*t)) for p, t in backs])
-    kwargs = jsonobj[3]
-    return Metaline(line, fores, backs, **kwargs)
+    kwargs = jsonobj[4]
+    
+    return Metaline(line, fores, backs, channels, **kwargs)
 
 class Metaline(object):
     """A line plus some metadata.
@@ -172,7 +174,7 @@ class Metaline(object):
     an output or not.
     """
 
-    def __init__(self, line, fores, backs, soft_line_start = False,
+    def __init__(self, line, fores, backs, channels=['main'], soft_line_start = False,
                  line_end = 'hard', wrap = False):
         self.line = line
         self.fores = fores
@@ -180,6 +182,7 @@ class Metaline(object):
         self.soft_line_start = soft_line_start
         self.line_end = line_end
         self.wrap = wrap
+        self.channels = channels
 
     def delete(self, start, end):
         """Delete a span of text, plus its associated metadata."""
@@ -216,19 +219,21 @@ class Metaline(object):
         """Deeply copy the metaline."""
         return Metaline(self.line, self.fores.copy(), self.backs.copy(),
                         wrap = self.wrap, line_end = self.line_end,
-                        soft_line_start = self.soft_line_start)
+                        soft_line_start = self.soft_line_start,
+                        channels = self.channels)
 
     def __eq__(self, other):
         return all([self.line == other.line, self.fores == other.fores,
                     self.backs == other.backs, self.wrap == other.wrap,
                     self.soft_line_start == other.soft_line_start,
-                    self.line_end == other.line_end])
+                    self.line_end == other.line_end,
+                    self.channels == other.channels])
 
     def __repr__(self):
         return 'Metaline(%r, %r, %r, soft_line_start = %r, '\
                'line_end = %r, wrap = %r)' % \
                (self.line, self.fores, self.backs, self.soft_line_start,
-                self.line_end, self.wrap)
+                self.line_end, self.wrap, self.channels)
     __str__ = __repr__
 
     def __add__(self, other):

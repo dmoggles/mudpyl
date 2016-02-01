@@ -314,8 +314,9 @@ class Connector:
         
             self.client.do_alias(string, self.server_echo, self.user_echo)
     
-    def cwrite(self, line, soft_line_start=False):
+    def cwrite(self, line, soft_line_start=False, channels = ['main']):
         ml=taggedml(line)
+        ml.channels = channels
         self.write(ml, soft_line_start)
         
            
@@ -346,7 +347,7 @@ class Connector:
                 metaline.insert(0, '\n')
                 
         for prot in self.protocols:
-            prot.metalineReceived(metaline,self.active_channels)
+            prot.metalineReceived(metaline)
 
         self._last_line_end = metaline.line_end
         

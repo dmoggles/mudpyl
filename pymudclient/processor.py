@@ -200,8 +200,9 @@ class MudProcessor(LineReceiver):
         except:
             self.handle_exception(traceback.format_exc())
     
-    def cwrite(self, line, display_line=True):
+    def cwrite(self, line, display_line=True, channels=['main']):
         ml=taggedml(line)
+        ml.channels = channels
         self.write(ml, display_line)
         
     def write(self, line, display_line = True):

@@ -179,7 +179,8 @@ class Connector:
         self.telnet=None
         self.client=None
         self._escape_parser=EscapeParser()
-        self.console=InteractiveConsole()
+        self.console_ns = {'client': self}
+        self.console=InteractiveConsole(self.console_ns)
         self.wrapper = TextWrapper(width=100, drop_whitespace=False)
         self._closing_down = False
         self.protocols = []
@@ -200,8 +201,12 @@ class Connector:
         self.total_client_time = 0
         self.block=[]
         self.user_echo = True
+        self.bypass_processor=False
         
-        
+    def set_bypass(self, state):
+        self.bypass_processor = (state==1)
+        print(self.bypass_processor)
+             
     def addProtocol(self, protocol):
         self.protocols.append(protocol)
            
@@ -276,10 +281,18 @@ class Connector:
     def metalineReceived(self, metaline, display_line = True):
         """Match a line against the triggers and perhaps display it on screen.
         """
-        self.client.do_triggers(metaline, display_line)
+        if not self.bypass_processor:
+            self.client.do_triggers(metaline, display_line)
+        else:
+            self.write(metaline)
         
     def blockReceived(self, block):
-        self.client.do_block(block) 
+        if not self.bypass_processor:
+            
+            self.client.do_block(block)
+        else:
+            for l in block:
+                self.write(l)
         
     def maybe_do_macro(self, chord):
         """Try and run a macro against the given keychord.
@@ -288,7 +301,7 @@ class Connector:
         no macro was found, or a macro returned True (meaning allow the GUI
         to continue handling the keypress).
         """
-        if chord in self.macros:
+        if chord in self.macros and not self.bypass_processor:
             macro = self.macros[chord]
             try:
                 macro(self)
@@ -310,9 +323,10 @@ class Connector:
         if string.startswith('/'):
             self.console.push(string[1:])
         else:
-            
-        
-            self.client.do_alias(string, self.server_echo, self.user_echo)
+            if not self.bypass_processor:
+                self.client.do_alias(string, self.server_echo, self.user_echo)
+            else:
+                self.telnet.sendLine(string)
     
     def cwrite(self, line, soft_line_start=False, channels = ['main']):
         ml=taggedml(line)
@@ -357,7 +371,8 @@ class Connector:
         self.active_channels = channels
         
     def gmcpReceived(self, gmcp_pair):
-        self.client.do_gmcp(gmcp_pair)
+        if not self.bypass_processor:
+            self.client.do_gmcp(gmcp_pair)
         
     def set_state(self, name, value):
         self.state[name]=value
@@ -368,8 +383,9 @@ class Connector:
         self.event_handlers[eventName].append(eventHandler)
         
     def fireEvent(self, eventName, *args):
-        self.client.do_event(eventName,*args)
-        self.fireEventLocal(eventName, *args)
+        if not self.bypass_processor:
+            self.client.do_event(eventName,*args)
+            self.fireEventLocal(eventName, *args)
     
     def fireEventLocal(self, eventName, *args):
         if eventName in self.event_handlers:

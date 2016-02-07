@@ -10,7 +10,10 @@ from Tkinter import Tk
 from pymudclient.gui.gtkguiwidgets import UpdatingWidgetView
 from gtk._gtk import SHRINK
 from pymudclient.library.imperian.imperian_gui import EnemyPanel
-from pymudclient.gui.gui_elements import BlackFrame, BlackEventBox
+from pymudclient.gui.gui_elements import BlackFrame, BlackEventBox,\
+    BetterToggleButton
+from pymudclient.colours import GREEN
+from pymudclient.gui import gui_elements
 
 class TimeOnlineLabel(gtk.Label):
 
@@ -61,7 +64,8 @@ class GUI(gtk.Window):
 
     """The toplevel window. Contains the command line and the output view."""
 
-    def __init__(self, realm):
+    def __init__(self, realm, mode):
+        self.mode = mode
         gtk.Window.__init__(self)
         self.realm = realm
         self.realm.addProtocol(self)
@@ -138,6 +142,18 @@ class GUI(gtk.Window):
         labelbox = gtk.HBox()
         #we want the paused indicator to be to the left, because it comes 
         #and goes.
+        if self.mode == 'enhanced':
+            bbox = gtk.HButtonBox()
+            bbox.set_spacing(5)
+            split_button = BetterToggleButton(label='Split', depressed_label='Unsplit',
+                                              color = gui_elements.GREEN, method=self.output_window.toggle_pause, gui=self, xsize = 50)
+            system_on = BetterToggleButton(label='Processing', depressed_label='Processing',
+                                              color = gui_elements.GREEN, method=self.realm.set_bypass, gui=self, xsize = 50)
+            
+            bbox.pack_end(split_button)
+            bbox.pack_end(system_on)
+            labelbox.pack_end(bbox, expand=False)
+            labelbox.pack_end(gtk.VSeparator(), expand = False)
         labelbox.pack_end(self.time_online, expand = False)
         labelbox.pack_end(gtk.VSeparator(), expand = False)
         labelbox.pack_end(self.paused_label, expand = False)
@@ -263,11 +279,11 @@ def copy_helper(text):
     r.clipboard_append(text)
     r.destroy()
 
-def configure(realm):
+def configure(realm, mode = 'simple'):
     """Set the right reactor up and get the GUI going."""
     from twisted.internet import gtk2reactor
     gtk2reactor.install()
-    gui = GUI(realm)
+    gui = GUI(realm, mode)
     macros = {from_string("<page up>"): gui.forward_page_up_cb,
               from_string('<page down>'): gui.forward_page_down_cb,
               from_string("C-c"): gui.maybe_forward_copy_cb}

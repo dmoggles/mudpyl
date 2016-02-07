@@ -21,8 +21,15 @@ known_guis = ['gtk']
 gui_help = ("The GUI to use. Available options: %s. Default: %%(default)s" %
                      ', '.join(known_guis))
 
+
+known_gui_modes = ['simple','enhanced']
+gui_mode_help = 'Gui Modes: simple - basic GUI.  enhanced - extra control buttons'
+
+
 parser.add_argument('-g', '--gui', default = 'gtk', help = gui_help,
                     choices = known_guis)
+parser.add_argument('-m', '--gui_mode', default = 'simple',help=gui_mode_help,
+                    choices = known_gui_modes)
 parser.add_argument('-p', '--processor', help = 'Path to Processor executable', required = True)
 parser.add_argument("modulename", help = "The module to import")
 parser.add_argument("--profile", action = "store_true",  default = False,
@@ -58,7 +65,7 @@ def main():
     realm.processor_exec = options.processor
     realm.module_name = options.modulename
     
-    configure(realm)
+    configure(realm, options.gui_mode)
 
     
 

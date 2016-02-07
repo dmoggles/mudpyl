@@ -14,7 +14,15 @@ class ImperianPrompt(BaseModule):
 
     def __init__(self, realm):
         BaseModule.__init__(self, realm)
+        self.extra_data={}
+        realm.registerEventHandler('promptDataEvent', self.prompt_extra_data)
         
+    def prompt_extra_data(self, key, data):
+        if data == '' and key in self.extra_data:
+            del self.extra_data[key]
+        else:
+            self.extra_data[key]=data
+            
         
     @property
     def triggers(self):
@@ -47,8 +55,8 @@ class ImperianPrompt(BaseModule):
         new_prompt = new_prompt+" "
         new_prompt = new_prompt+"<white>M:<%s>%d<white>/<green>%d"%(mc, mp, maxmp)
         
-        bal_char = '<green*>b' if self.manager.gmcp['Char.Vitals']['bal']=='1' else '<white>-'
-        eq_char = '<green*>e' if self.manager.gmcp['Char.Vitals']['eq']=='1' else '<white>-'
+        bal_char = '<green*>b' if ('bal' in self.manager.gmcp['Char.Vitals'] and self.manager.gmcp['Char.Vitals']['bal']=='1') else '<white>-'
+        eq_char = '<green*>e' if ('eq' in self.manager.gmcp['Char.Vitals'] and self.manager.gmcp['Char.Vitals']['eq']=='1') else '<white>-'
         
         new_prompt+= " <white>["
         new_prompt+= eq_char
@@ -72,6 +80,11 @@ class ImperianPrompt(BaseModule):
         #autocuring 
         
         new_prompt+= " <yellow*>AC: "+ ("<red*>OFF" if self.manager.get_state('autocuring')=='off' else "<green*>ON")
+        
+        #extra data
+        if len(self.extra_data):
+            new_prompt+= ' '+' <white>| '.join(self.extra_data.values())
+        
         new_prompt+= "<white>]"
         
         realm.cwrite(new_prompt)

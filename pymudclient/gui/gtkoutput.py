@@ -135,6 +135,11 @@ class OutputView(DisplayView):
         return True
 
 
+    def toggle_pause(self, state):
+        if state==1:
+            self.pause()
+        else:
+            self.unpause()
         
     def pause(self):
         """Stop autoscrolling to new data."""

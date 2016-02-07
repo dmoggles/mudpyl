@@ -15,6 +15,53 @@ GREEN='#00AA00'
 YELLOW='#EDF00D'
 ORANGE='#FF7C10'
 
+
+
+class BetterToggleButton(gtk.Button):
+    def __init__(self, label, depressed_label, method,  gui, color = BG_GRAY, depressed_color = RED, xsize=None):
+        gtk.Button.__init__(self, label)
+        self.normal_label = label
+        self.gui = gui
+        self.pressed_label = depressed_label
+        self.normal_color = color
+        self.pressed_color = depressed_color
+        self.set_color(color)
+        self.pressed_state=0
+        self.connect('clicked', self.do_clicked)
+        self.method = method
+        self.connect('focus-in-event', self.got_focus_cb)
+        if not xsize == None:
+            size = self.get_size_request()
+            self.set_size_request(xsize, size[1])
+        
+    
+    def got_focus_cb(self, *args, **kwargs):
+        self.gui.command_line.grab_focus()
+        
+    def set_color(self, color):
+        style = self.get_style().copy()
+        style.bg[gtk.STATE_NORMAL] = gtk.gdk.Color(color)
+        style.bg[gtk.STATE_PRELIGHT] = gtk.gdk.Color(color)
+        self.set_style(style)
+        
+    def do_clicked(self, *args, **kwargs):
+        
+        if self.pressed_state==1:
+            self.pressed_state = 0;
+            self.set_color(self.normal_color)
+            self.set_label(self.normal_label)
+        else:
+            self.pressed_state=1
+            self.set_color(self.pressed_color)
+            self.set_label(self.pressed_label)
+        
+        self.method(self.pressed_state)
+        
+        
+        
+        
+
+
 class BlackEventBox(gtk.EventBox):
     def __init__(self):
         gtk.EventBox.__init__(self)

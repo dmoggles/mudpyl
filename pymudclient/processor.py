@@ -42,6 +42,8 @@ class MudProcessor(LineReceiver):
         self.block=[]
         self.queue_to_send=[]
         self.connected=False
+        self.name=''
+        self.safe_to_send=True
         
         
     def heartbeat(self):
@@ -61,7 +63,8 @@ class MudProcessor(LineReceiver):
     def connectionMade(self):
         self.log.write('ConnectionMade\n')
         self.connected = True
-        self.transport.write(json.dumps(["hello", [self.macros]]) + "\n")
+        #self.transport.write(json.dumps(["hello", [self.macros]]) + "\n")
+        self.send_to_client('hello', [self.macros] if len(self.macros) else [{}])
         self.heartbeat_lc = LoopingCall(self.heartbeat)
         self.heartbeat_lc.start(10)
         
@@ -219,6 +222,10 @@ class MudProcessor(LineReceiver):
         self.last_command_sent = line
         self.send_to_client('send_to_mud', line)
         
+    def safe_send(self, line, echo = True):
+        if self.safe_to_send:
+            self.send(line, echo)
+        
     def send(self, line, echo = True):
         """Match aliases against the line and perhaps send it to the MUD."""
         echo = not self.server_echo and echo
@@ -275,6 +282,9 @@ class TimerRealm(object):
     def __init__(self, root):
         self.root = self.parent = root
     
+    
+    def safe_send(self, line, echo=False):
+        self.parent.safe_send(line, echo)
     def send(self, line, echo = False):
         self.parent.send(line, echo)
 

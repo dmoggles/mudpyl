@@ -19,9 +19,12 @@ class RageTracker(EarlyInitialisingModule):
     @property
     def triggers(self):
         return [self.rage_set,
-                self.rage_set_0]
+                self.rage_set_0,
+                self.no_rage_focus]
     
-    @binding_trigger('^Your rage increases! It is now at (\d+)%\.$')
+    
+    @binding_trigger(['^Your rage increases! It is now at (\d+)%\.$',
+                      '^Your rage subsides. It is now at (\d+)%\.$'])
     def rage_set(self, match, realm):
         self.rage = int(match.group(1))
         realm.display_line=False
@@ -43,6 +46,10 @@ class RageTracker(EarlyInitialisingModule):
         realm.display_line=False
         realm.cwrite('<white*:purple>RAGE: <white*:green>0')
         realm.fireEvent('promptDataEvent','rage',self.make_prompt_text())
+        
+    @binding_trigger("^You cannot focus on the Berseker's rage again so soon\.$")
+    def no_rage_focus(self, match, realm):
+        self.display_line = False
         
     def make_prompt_text(self):
         if self.rage <30:

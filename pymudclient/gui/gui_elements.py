@@ -263,6 +263,10 @@ class AffLabel(BlackEventBox):
     
     def on_affliction_gained(self, target, afflictions):
         aff_list = afflictions.split(',')
+        print(self.target)
+        print(target)
+        print(self.name)
+        print(aff_list)
         if self.target == target and self.name in aff_list:
             self.set(True)
             

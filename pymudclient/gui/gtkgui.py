@@ -188,7 +188,8 @@ class GUI(gtk.Window):
         #outputbox.pack_start(widgetbox, expand=True)
         
         left_box = gtk.VBox()
-        left_box.pack_start(self.realm.extra_gui)
+        if not self.realm.extra_gui == None:
+            left_box.pack_start(self.realm.extra_gui)
         self.output_container.pack_start(self.scrolled_out, expand=True)
         outputbox.attach(left_box, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
         outputbox.attach(self.output_container, left_attach=1, right_attach=4, top_attach=0, bottom_attach=1)

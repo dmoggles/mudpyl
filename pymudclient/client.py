@@ -62,7 +62,10 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         self.messages_not_acknowledged += 1
         
     def lineReceived_recomposed(self, line):
-        meth, rest = json.loads(line)
+        try:
+            meth, rest = json.loads(line)
+        except:
+            print('ERROR DECODING %s'%line)
         if meth == 'ack':
             self.messages_not_acknowledged -= 1
             if not self.messages_not_acknowledged:

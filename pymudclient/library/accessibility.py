@@ -28,8 +28,8 @@ class ScreenreaderProtocol():
         pass
     connectionLost = connectionMade
     
-    def metalineReceived(self, metaline,channels):
-        if 'main' in channels:
+    def metalineReceived(self, metaline):
+        if 'main' in metaline.channels:
             self.speaker.output(metaline.line)
             
             

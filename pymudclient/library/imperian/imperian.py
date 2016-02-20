@@ -164,7 +164,7 @@ class ImperianModule(BaseModule):
         realm.write(ml)
         realm.root.set_state('target',my_target)
         #realm.root.gui.set_target(my_target)
-        realm.root.fireEvent('setTargetEvent',my_target)
+        realm.root.fireEvent('setTargetEvent',my_target.lower())
         realm.send_to_mud=False  
         
     @binding_alias('^en$')

@@ -92,10 +92,10 @@ class AffGroup(BlackEventBox):
         return self.labels[item]
         
 class AffPanel(BlackEventBox):
-    def __init__(self):
+    def __init__(self, client):
         BlackEventBox.__init__(self)
         f=BlackFrame('Afflictions')
-        
+        self.target=''
         t=gtk.Table(columns=6,rows=1,homogeneous=True)
         f.add(t)
         self.all_labels={}
@@ -117,6 +117,23 @@ class AffPanel(BlackEventBox):
         for i,c in enumerate(affs.keys()):
             group = AffGroup(c,affs[c],self)
             vboxes[i%6].pack_start(group, expand=False)
+        
+        client.registerEventHandler('afflictionGainedEvent', self.on_affliction_gained)
+        client.registerEventHandler('afflictionLostEvent', self.on_affliction_lost)
+        client.registerEventHandler('setTargetEvent', self.on_set_target)
+        
+    def on_set_target(self, target):
+        self.target = target
+        
+    def on_affliction_gained(self, target, afflictions):
+        if target == self.target:
+            for a in afflictions:
+                self.set(a, True)
+                
+    def on_affliction_lost(self, target, afflictions):
+        if target == self.target:
+            for a in afflictions:
+                self.set(a, False)
              
     def set(self, affliction, on):
         if affliction in self.all_labels:
@@ -223,13 +240,15 @@ class CountdownWidget(BlackEventBox):
         self.set_seconds(0)      
 
 class ToggleLabel(BlackEventBox):
-    def __init__(self, label, color):
+    def __init__(self, label,  color):
         BlackEventBox.__init__(self)
         self.label=FormattedLabel(label)
         self.color = color
         self.label.modify_font(pango.FontDescription('monospace 12'))
         self.label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(self.color))
         self.add(self.label)
+        
+        
         
     def set_state(self, state):
         if state:
@@ -241,7 +260,7 @@ class ToggleLabel(BlackEventBox):
         
 
 class ShieldBox(BlackEventBox):
-    def __init__(self):
+    def __init__(self, realm):
         BlackEventBox.__init__(self)
         self.shield=ToggleLabel('Shield',ge.RED)
         self.rebound=ToggleLabel('Rebounding',ge.RED)
@@ -255,7 +274,34 @@ class ShieldBox(BlackEventBox):
         t.attach(self.prism, top_attach=1, bottom_attach=2, left_attach=1, right_attach=2)
         f.add(t)
         self.add(f)
+        self.target = ''
+        realm.registerEventHandler('setTargetEvent',self.set_target)
+        realm.registerEventHandler('shieldEvent', self.on_shield_event)
+        realm.registerEventHandler('reboundingEvent', self.on_rebounding_event)
+        realm.registerEventHandler('barrierEvent', self.on_barrier_event)
+        realm.registerEventHandler('cursewardEvent', self.on_curseward_event)
         
+    def set_target(self, target):
+        self.target = target
+        
+    def on_shield_event(self, target, value):
+        if target == self.target:
+            self.set_shield('shield', value==1)
+            
+    def on_rebounding_event(self, target, value):
+        if target == self.target:
+            
+            self.set_shield('rebound', value==1)
+            
+    def on_barrier_event(self, target, value):
+        if target == self.target:
+            self.set_shield('prism', value==1)
+            
+    def on_curseward_event(self, target, value):
+        if target == self.target:
+            self.set_shield('curseward', value==1)
+            
+            
     def set_shield(self, shield, state):
         if shield=='shield':
             self.shield.set_state(state)
@@ -435,11 +481,11 @@ class EnemyPanel(BlackEventBox):
         box.pack_start(self.char_data_panel, expand=False)
         self.cooldown_panel = CountdownPanel()
         box.pack_start(self.cooldown_panel, expand=False)
-        self.aff_panel = AffPanel()
+        self.aff_panel = AffPanel(client)
         box.pack_start(self.aff_panel, expand=False)
         f.add(box)
         self.add(f)
-        self.shield = ShieldBox()
+        self.shield = ShieldBox(client)
         box.pack_start(self.shield, expand=False)
         self.hp_mana = HpManaPanel("Target", client)
         box.pack_start(self.hp_mana, expand=False)

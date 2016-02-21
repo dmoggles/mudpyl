@@ -60,10 +60,9 @@ class WeaponMasteryCommands(BaseModule):
         direction = match.group(1)
         realm.send('queue eqbal barge %s %s'%(target, direction))
     
-    @binding_alias('^lun(ne|n|nw|w|sw|s|se|e|ou|in|up|do)$')
+    @binding_alias('^lun$')
     def lunge(self, match, realm):
         realm.send_to_mud = False
         target = realm.root.get_state('target')
-        direction = match.group(1)
-        realm.send('queue eqbal lunge %s %s'%(target, direction))
+        realm.send('queue eqbal lunge %s'%target)
  

@@ -70,13 +70,18 @@ class Deathknight(EarlyInitialisingModule):
                 self.engage,
                 self.raze_attack,
                 self.teeth,
-                self.fleshburn]
+                self.fleshburn,
+                self.soulquench]
     @property
     def macros(self):
         return {'<F1>':'delayed pk',
+                'C-q':'delayed pk',
                 '<F2>':'delayed finish',
+                'C-w':'delayed finish',
                 '<F12>':'sh',
-                '<F11>':'queue eqbal bwind'} 
+                'C-e':'sh',
+                '<F11>':'queue eqbal bwind',
+                'C-b':'queue eqbal bwind'} 
         
     @property
     def gmcp_events(self):
@@ -154,6 +159,7 @@ class Deathknight(EarlyInitialisingModule):
     @binding_alias('^pk$')
     def pk(self, match, realm):
         realm.send_to_mud = False
+        self.combo_fired=True
         target = realm.root.get_state('target')
         combo = self.combo_maker.get_combo(realm, target)
         realm.send('queue eqbal %s'%combo)
@@ -162,6 +168,7 @@ class Deathknight(EarlyInitialisingModule):
     @binding_alias('^finish$')
     def finish(self, match, realm):
         realm.send_to_mud=False
+        self.combo_fired=True
         target = realm.root.get_state('target')
         combo = self.combo_maker.get_finish(realm, target)
         realm.send('queue eqbal %s'%combo)
@@ -272,7 +279,8 @@ class Deathknight(EarlyInitialisingModule):
     def toxin_hit(self, match, realm):
         if self.gags and self.combo_fired:
             realm.display_line = False
-        self.display_data['attacks'][self.display_attack_counter]['toxin']=match.group(1)
+        if self.display_attack_counter>=0:
+            self.display_data['attacks'][self.display_attack_counter]['toxin']=match.group(1)
     
     @binding_trigger('^You move in to engage (\w+)')
     def engage(self, match, realm):
@@ -304,6 +312,14 @@ class Deathknight(EarlyInitialisingModule):
         if 'flares' not in self.display_data['attacks'][self.display_attack_counter]:
             self.display_data['attacks'][self.display_attack_counter]['flares']=[]
         self.display_data['attacks'][self.display_attack_counter]['flares'].append('Fleshburn')
+    
+    @binding_trigger("^As the weapon strikes (\w+), (?:she|he) pales and (?:her|his) flesh clings closer to (?:her|his) bones\.$")
+    def soulquench(self, match, realm):
+        if self.gags and self.combo_fired:
+            realm.display_line = False
+        if 'flares' not in self.display_data['attacks'][self.display_attack_counter]:
+            self.display_data['attacks'][self.display_attack_counter]['flares']=[]
+        self.display_data['attacks'][self.display_attack_counter]['flares'].append('Soulquench')
     
     @binding_trigger("^The teeth along the weapon edge cut into (\w+)'s flesh\.$")
     def teeth(self, match, realm):
@@ -339,6 +355,10 @@ class Deathknight(EarlyInitialisingModule):
                         flare_texts.append('<black*:white>%10s'%'Teeth')
                     if flare=='Fleshburn':
                         flare_texts.append('<red*:white>%10s'%'Fleshburn')
+                    if flare=='Soulquench':
+                        flare_texts.append('<green*:white>%10s'%'Soulquench')
+                    if flare=='Negating':
+                        flare_texts.append('<blue*:white>%10s'%'Negating')
                 output+='<white>,'.join(flare_texts)
             output+='<white>]'
         if 'engage' in self.display_data:

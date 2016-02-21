@@ -46,7 +46,8 @@ class ImperianModule(BaseModule):
     def aliases(self):
         return [self.show_gmcp, self.add_module,self.set_target,self.untar,
                 self.whois,
-                self.enemy]
+                self.enemy,
+                self.qq]
     @property
     def triggers(self):
         return [self.on_map_header,
@@ -63,6 +64,10 @@ class ImperianModule(BaseModule):
         return[self.vitals#, 
                #self.on_map_redirect
                ]
+    
+    @binding_alias('^qq$')
+    def qq(self, match, realm):
+        realm.send('autocuring defenses off')
     
     @binding_alias('^whois (\w+)')
     def whois(self, match,realm):

@@ -25,7 +25,7 @@ class CommandView(gtk.Entry):
         and if there is then it is run; if not, the key is handled by PyGTK.
         """
         chord = from_gtk_event(event)
-        print('chord %s'%chord)
+        
         if not self.gui.realm.maybe_do_macro(chord):
             #not a macro, so keep processing.
             return False

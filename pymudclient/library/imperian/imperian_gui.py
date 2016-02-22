@@ -200,7 +200,7 @@ class CountdownBar(BlackEventBox):
             value = 1.0
             self.pb.set_fraction(1.0)
             self.pb.modify_fg(gtk.STATE_PRELIGHT, gtk.gdk.Color(ge.RED))
-        print(value)
+        #print(value)
         self.pb.set_fraction(value)
             
             

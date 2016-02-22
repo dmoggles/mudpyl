@@ -86,8 +86,8 @@ class PlayerTracker(BaseModule):
         
     @binding_gmcp_event('Room.RemovePlayer')
     def on_room_remove_player(self, gmcp_data, realm):
-        print(gmcp_data)
-        print(self.players)
+        #print(gmcp_data)
+        #print(self.players)
         #realm.root.debug('PlayerRemove: %s'%gmcp_data)
         name=(str(gmcp_data)[1:-1]).lower()
         #realm.root.debug('PlayerName: %s'%name)

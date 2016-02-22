@@ -102,7 +102,7 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
     def __init__(self, block, root, parent, display_group=True):
         BaseMatchingRealm.__init__(self, root, parent)
         self.block=block
-        self.alterers=[LineAlterer()]*len(self.block)
+        self.alterers=[LineAlterer() for i in xrange(len(self.block))]
         self.display_lines = [display_group]*len(self.block)
         self.display_group = True
         
@@ -141,7 +141,6 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
             
         #for module in self.root.modules:
         #    module.on_prompt(self)
-            
         for indx, alterer in enumerate(self.alterers):
             metaline = alterer.apply(self.block[indx])
             '''Apply the channels that were set when actually writing'''

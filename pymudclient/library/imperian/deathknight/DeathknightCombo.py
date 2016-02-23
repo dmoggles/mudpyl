@@ -57,7 +57,7 @@ class DeathknightCombo(EarlyInitialisingModule):
             attack1='raze'
             attack2='raze'
         
-        combo+='|quickdraw %(sword)s shield'%{'sword':self.finisher}
+        combo+='|quickdraw %s shield'%self.finisher
         combo+='|wm %(attack1)s %(attack2)s %(target)s %(toxin1)s %(toxin2)s'%{'attack1':attack1,
                                                                                'attack2':attack2,
                                                                                'target':target,
@@ -72,7 +72,7 @@ class DeathknightCombo(EarlyInitialisingModule):
         combo = 'stand|order hound kill %s'%target
         toxins = self.get_toxins(tracker)
         if tracker['haemophilia'].on:
-            sword = self.light
+            sword = self.infused
             attack1 = 'lacerate'
             attack2 = 'lacerate'
         else:
@@ -95,7 +95,7 @@ class DeathknightCombo(EarlyInitialisingModule):
             attack1='raze'
             attack2=old_attack1
             
-        combo+='|quickdraw %(sword)s shield'%{'sword':sword}
+        combo+='|quickdraw %s shield'%sword
         combo+='|wm %(attack1)s %(attack2)s %(target)s %(toxin1)s %(toxin2)s'%{'attack1':attack1,
                                                                                'attack2':attack2,
                                                                                'target':target,

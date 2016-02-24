@@ -3,9 +3,29 @@ Created on Feb 9, 2016
 
 @author: Dmitry
 '''
-from pymudclient.modules import EarlyInitialisingModule
+from pymudclient.modules import EarlyInitialisingModule, BaseModule
 from pymudclient.aliases import binding_alias
 from pymudclient.triggers import binding_trigger
+
+
+class RampageCommands(BaseModule):
+    
+    @property
+    def aliases(self):
+        return [self.backflip,
+                self.frontflip]
+        
+    @binding_alias('^ff(n|w|e|s|nw|ne|sw|se|u|d|i|o)$')
+    def frontflip(self, match, realm):
+        realm.send_to_mud=False
+        realm.send('queue eqbal frontflip %s'%match.group(1))
+
+    @binding_alias('^bf(n|w|e|s|nw|ne|sw|se|u|d|i|o)$')
+    def backflip(self, match, realm):
+        realm.send_to_mud=False
+        realm.send('queue eqbal backflip %s'%match.group(1))
+    
+        
 
 class Dances(EarlyInitialisingModule):
     def __init__(self, manager):

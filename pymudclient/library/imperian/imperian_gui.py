@@ -10,7 +10,7 @@ import pango
 import time
 from pymudclient.library.imperian.imperian import get_char_data
 from pymudclient.gui.gui_elements import BlackEventBox, FormattedLabel,\
-    BlackFrame, HpManaWidget, HpManaPanel
+    BlackFrame, HpManaWidget, HpManaPanel, BleedPanel
     
 import pymudclient.gui.gui_elements as ge
 
@@ -392,33 +392,7 @@ class CharDataPanel(BlackEventBox):
             self.elements['org'].set_value(data['city'])
             self.elements['statpack'].set_value(data['statpack'])
             
-class BleedPanel(BlackEventBox):
-    def __init__(self):
-        BlackEventBox.__init__(self)
-        f=BlackFrame('Bleed')
-        t = gtk.Table(rows=1, columns = 5, homogeneous=True)
-        l = FormattedLabel('Bleed')
-        t.attach(l, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
-        self.current=0
-        self.max = 150
-        self.pb = gtk.ProgressBar()
-        t.attach(self.pb, left_attach=1, right_attach=5, top_attach=0, bottom_attach=1)
-        self.update()
-        f.add(t)
-        self.add(f)
-        
-    def update(self):
-        
-        self.pb.set_text('%d'%self.current)
-        self.pb.set_fraction(min(float(self.current)/float(self.max),1.0))
-        #self.pb.update(percentage=min(float(self.current)/float(self.max),1.0))
-    
-    
-        
-    def set_current(self, value):
-        self.current=value
-        self.update()
-            
+
 class LimbDamageLabel(BlackEventBox):
     def __init__(self, limb_name):
         BlackEventBox.__init__(self)
@@ -529,7 +503,7 @@ class SelfPanel(BlackEventBox):
         f.add(box)
         self.hp_mana = HpManaPanel('Self', client)
         box.pack_start(self.hp_mana, expand=False)
-        self.bleed = BleedPanel()
+        self.bleed = BleedPanel(client)
         box.pack_start(self.bleed, expand=False)
         self.add(f)
         

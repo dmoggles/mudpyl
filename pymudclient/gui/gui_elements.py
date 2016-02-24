@@ -290,3 +290,36 @@ class AffLabel(BlackEventBox):
                 self.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(ge.DARK_RED))
             else:
                 self.modify_bg(gtk.STATE_NORMAL,gtk.gdk.Color(ge.RED))
+
+
+class BleedPanel(BlackEventBox):
+    def __init__(self, realm):
+        BlackEventBox.__init__(self)
+        f=BlackFrame('Bleed')
+        t = gtk.Table(rows=1, columns = 5, homogeneous=True)
+        l = FormattedLabel('Bleed')
+        t.attach(l, left_attach=0, right_attach=1, top_attach=0, bottom_attach=1)
+        self.current=0
+        self.max = 150
+        self.pb = gtk.ProgressBar()
+        t.attach(self.pb, left_attach=1, right_attach=5, top_attach=0, bottom_attach=1)
+        self.update()
+        f.add(t)
+        self.add(f)
+        realm.registerEventHandler('selfStatUpdateEvent', self.handle_event)
+        
+    def update(self):
+        
+        self.pb.set_text('%d'%self.current)
+        self.pb.set_fraction(min(float(self.current)/float(self.max),1.0))
+        #self.pb.update(percentage=min(float(self.current)/float(self.max),1.0))
+    
+    
+    def handle_event(self, stat, value):
+        if stat == 'bleed':
+            self.set_current(value)
+        
+    def set_current(self, value):
+        self.current=value
+        self.update()
+            

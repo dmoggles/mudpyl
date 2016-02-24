@@ -3,8 +3,15 @@ Created on Feb 9, 2016
 
 @author: Dmitry
 '''
-from pymudclient.modules import EarlyInitialisingModule
+from pymudclient.modules import EarlyInitialisingModule, BaseModule
 from pymudclient.triggers import binding_trigger
+from pymudclient.aliases import binding_alias
+
+
+class BuffingWarchant(BaseModule):
+    wc_list = ['toughen','empower','warsong','invigorate','regenerate','rejuvenate',
+               'echoing','resonate']
+
 
 class Warchants(EarlyInitialisingModule):
     '''
@@ -23,7 +30,17 @@ class Warchants(EarlyInitialisingModule):
                 self.weaken,
                 self.no_effect]
         
-        
+    @property
+    def aliases(self):
+        return [self.taunt]
+    
+    
+    @binding_alias('^tn$')
+    def taunt(self, match, realm):
+        target = realm.root.get_state('target')
+        realm.send_to_mud = False
+        realm.send('queue eqbal warchant taunt %s'%target)
+    
     @binding_trigger('^The thrill of the battle flowing through your body, you hurl a powerful weakening scream towards')
     def weaken(self, matches, realm):
         self.last_chant = 'weaken'

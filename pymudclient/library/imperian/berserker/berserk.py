@@ -8,6 +8,8 @@ from pymudclient.aliases import binding_alias
 from pymudclient.triggers import binding_trigger
 import time
 from pymudclient.library.imperian.berserker.sword_combo import SwordCombo1
+from pymudclient.library.imperian.berserker.rampage import RampageCommands
+from pymudclient.library.imperian.berserker.maiming import MaimingCommands
 
 class BerskerComboMaker(EarlyInitialisingModule):
     '''
@@ -57,9 +59,15 @@ class BerskerComboMaker(EarlyInitialisingModule):
     def macros(self):
         return {'<F1>':'delayed_pk'}
     
+    @property
+    def modules(self):
+        return [RampageCommands,
+                MaimingCommands]
+    
     @binding_trigger("^(\w+)'s condition stands at (\d+)\/(\d+) health and (\d+)\/(\d+) mana\.$")
     def trueassess(self, match, realm):
-        name = str(match.group(1))
+        target = realm.root.get_state('target').lower()
+        name = str(match.group(1)).lower()
         self.hp = int(match.group(2))
         self.max_hp = int(match.group(3))
         self.mana = int(match.group(4))
@@ -69,6 +77,13 @@ class BerskerComboMaker(EarlyInitialisingModule):
                                                                             'hp':self.hp,
                                                                             'hppct':int((float(self.hp)/float(self.max_hp))*100),
                                                                             'mppct':int((float(self.mana)/float(self.max_mana))*100)})
+        
+        
+        if target==name:
+            realm.root.fireEvent('targetStatUpdateEvent','hp',self.hp)
+            realm.root.fireEvent('targetStatUpdateEvent','mana',self.mana)
+            realm.root.fireEvent('targetStatUpdateEvent','hp_max',self.max_hp)
+            realm.root.fireEvent('targetStatUpdateEvent','mana_max',self.max_mana)
         
     
     def send_prompt_info(self, event_target, affs):
@@ -143,14 +158,18 @@ class BerskerComboMaker(EarlyInitialisingModule):
         #warchant part
         if self.warchants.get_weaken_count(target)>=4 or self.warchants.get_weaken_count(target)>= 2 and self.hp < 150:# or (self.warchants.get_weaken_count(target)>=4 and tracker['sensitivity'].on) or (self.rage.rage>=30 and self.warchants.get_weaken_count(target)>=4):
             if self.rage.rage>=30:
-                warchant = 'thunder pierce'
+                warchant = 'thunder pierce|pierce'
             else:
                 warchant = 'pierce'
+        elif self.rage.rage == 100:
+            warchant = 'enrage'
          
-        elif self.rage.rage>=50:
+        elif self.rage.rage>=50 and self.warchants.get_weaken_count(target)<3:
             warchant = 'repeat weaken'
         else:
             warchant = 'weaken'
+        
+            
         
         combo=combo%{'first':first,
                      'second':second,

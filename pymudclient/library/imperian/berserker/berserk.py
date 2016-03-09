@@ -73,11 +73,11 @@ class BerskerComboMaker(EarlyInitialisingModule):
         self.mana = int(match.group(4))
         self.max_mana = int(match.group(5))
             
-        realm.send('rt %(name)s - %(hp)dh [%(hppct)d%% m:%(mppct)d%%]'%{'name':name,
-                                                                            'hp':self.hp,
-                                                                            'hppct':int((float(self.hp)/float(self.max_hp))*100),
-                                                                            'mppct':int((float(self.mana)/float(self.max_mana))*100)})
-        
+#         realm.send('rt %(name)s - %(hp)dh [%(hppct)d%% m:%(mppct)d%%]'%{'name':name,
+#                                                                             'hp':self.hp,
+#                                                                             'hppct':int((float(self.hp)/float(self.max_hp))*100),
+#                                                                             'mppct':int((float(self.mana)/float(self.max_mana))*100)})
+#         
         
         if target==name:
             realm.root.fireEvent('targetStatUpdateEvent','hp',self.hp)
@@ -141,6 +141,8 @@ class BerskerComboMaker(EarlyInitialisingModule):
         combo = 'warchant rage focus|combo %(first)s %(second)s %(warchant)s %(target)s'
         target = realm.root.get_state('target')
         tracker = self.tracker.tracker(target)
+        realm.cwrite('<white*:red>Stats: Rage - %(rage)d, Affs: %(affs)d\n\n'%{'rage':self.rage.rage,
+                                                                           'affs':self.warchants.get_weaken_count(target)})
         #Maiming part
         if self.raze[target].aura and self.raze[target].shield and not self.dances.beguile:
             first = 'raze'
@@ -156,15 +158,15 @@ class BerskerComboMaker(EarlyInitialisingModule):
             else:
                 second = 'bash'
         #warchant part
-        if self.warchants.get_weaken_count(target)>=4 or self.warchants.get_weaken_count(target)>= 2 and self.hp < 150:# or (self.warchants.get_weaken_count(target)>=4 and tracker['sensitivity'].on) or (self.rage.rage>=30 and self.warchants.get_weaken_count(target)>=4):
+        if self.warchants.get_weaken_count(target)>=3 or self.warchants.get_weaken_count(target)>= 2 and self.hp < 150:# or (self.warchants.get_weaken_count(target)>=4 and tracker['sensitivity'].on) or (self.rage.rage>=30 and self.warchants.get_weaken_count(target)>=4):
             if self.rage.rage>=30:
-                warchant = 'thunder pierce|pierce'
+                warchant = 'thunder pierce'
             else:
                 warchant = 'pierce'
-        elif self.rage.rage == 100:
-            warchant = 'enrage'
+        #elif self.rage.rage == 100:
+        #    warchant = 'enrage'
          
-        elif self.rage.rage>=50 and self.warchants.get_weaken_count(target)<3:
+        elif self.rage.rage>=50: #and self.warchants.get_weaken_count(target)<3:
             warchant = 'repeat weaken'
         else:
             warchant = 'weaken'

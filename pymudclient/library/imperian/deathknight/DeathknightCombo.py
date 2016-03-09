@@ -45,7 +45,7 @@ class DeathknightCombo(EarlyInitialisingModule):
             
     def get_finish(self, realm, target):
         tracker = self.tracker.tracker(target)
-        combo = 'stand|order hound kill %s'%target
+        combo = 'light pipes|enemy %(target)s|stand|order hound kill %(target)s'%{'target':target}
         toxins = self.get_toxins(tracker)
         if not 'aconite' in toxins[0:2]:
             toxins.insert(0, 'aconite')
@@ -69,7 +69,8 @@ class DeathknightCombo(EarlyInitialisingModule):
     
     def get_combo(self, realm, target):
         tracker = self.tracker.tracker(target)
-        combo = 'stand|order hound kill %s'%target
+        
+        combo = 'light pipes|enemy %(target)s|stand|order hound kill %(target)s'%{'target':target}
         toxins = self.get_toxins(tracker)
         if tracker['haemophilia'].on:
             sword = self.infused
@@ -84,7 +85,7 @@ class DeathknightCombo(EarlyInitialisingModule):
                 sword = self.infused
             else:
                 sword = self.draining
-            attack1 = 'slash'
+            attack1 = 'lacerate'
             attack2 = 'shred'
         
         if self.shield_tracker[target].aura and self.shield_tracker[target].shield:

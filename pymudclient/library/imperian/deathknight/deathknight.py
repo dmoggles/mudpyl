@@ -24,7 +24,8 @@ class Deathknight(EarlyInitialisingModule):
 
 
     def __init__(self, realm, communicator, aff_tracker, shield_track,
-                 light, infused, draining, finisher):
+                 light, infused, draining, finisher,
+                 autoparry):
         self.aff_tracker = aff_tracker
         self.communicator =communicator
         self.aff_tracker.apply_priorities([('haemophilia',1)])
@@ -39,7 +40,7 @@ class Deathknight(EarlyInitialisingModule):
         self.gags=True
         self.post_combo = False
         self.combo_fired = False
-        
+        self.autoparry = autoparry
         self.realm.registerEventHandler('setTargetEvent', self.on_target_set)
         self.combo_maker = DeathknightCombo(light, infused, draining, finisher, aff_tracker, shield_track)
     
@@ -71,7 +72,8 @@ class Deathknight(EarlyInitialisingModule):
                 self.raze_attack,
                 self.teeth,
                 self.fleshburn,
-                self.soulquench]
+                self.soulquench,
+                self.rage]
     @property
     def macros(self):
         return {'<F1>':'delayed pk',
@@ -144,6 +146,11 @@ class Deathknight(EarlyInitialisingModule):
         realm.send(command)
         
         
+    @binding_trigger(['^You are afflicted with peace\.$',
+                    '^You are feeling far too passive to do that\.$'])
+    def rage(self, match, realm):
+        realm.send("rage")
+        
     @binding_alias('^delayed (\w+)$')
     def auto_macro(self, matches, realm):
         command = matches.group(1)
@@ -161,7 +168,11 @@ class Deathknight(EarlyInitialisingModule):
         realm.send_to_mud = False
         self.combo_fired=True
         target = realm.root.get_state('target')
+        parry = self.autoparry.evaluate_parry()
         combo = self.combo_maker.get_combo(realm, target)
+        if parry!='':
+            combo='parry %(parry)s|%(combo)s'%{'parry':parry,
+                                               'combo':combo}
         realm.send('queue eqbal %s'%combo)
     
     
@@ -171,6 +182,10 @@ class Deathknight(EarlyInitialisingModule):
         self.combo_fired=True
         target = realm.root.get_state('target')
         combo = self.combo_maker.get_finish(realm, target)
+        parry = self.autoparry.evaluate_parry()
+        if parry!='':
+            combo='parry %(parry)s|%(combo)s'%{'parry':parry,
+                                               'combo':combo}
         realm.send('queue eqbal %s'%combo)
     
     
@@ -183,8 +198,8 @@ class Deathknight(EarlyInitialisingModule):
     
     @binding_trigger("^(\w+)'s condition stands at (\d+)/(\d+) health and (\d+)/(\d+) mana\.$")
     def trueassess_trigger(self, match, realm):
-        if self.gags and self.combo_fired:
-            realm.display_line=False
+        #if self.gags and self.combo_fired:
+        #    realm.display_line=False
         person = match.group(1).lower()
         hp=int(match.group(2))
         max_hp=int(match.group(3))

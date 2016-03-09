@@ -62,6 +62,13 @@ class ImperianPrompt(BaseModule):
         new_prompt+= eq_char
         new_prompt+= bal_char
         
+        prone = 0
+        if 'prone' in self.manager.gmcp['Char.Vitals'] and self.manager.gmcp['Char.Vitals']['prone']=='1':
+            prone = 1
+        
+        if prone==1:
+            new_prompt += '  <white*:red>PRONE<white>  '
+        
         blind = 'blind' in self.manager.gmcp['Char.Vitals'] and self.manager.gmcp['Char.Vitals']['blind']=='1'
         deaf = 'deaf' in self.manager.gmcp['Char.Vitals'] and self.manager.gmcp['Char.Vitals']['deaf']=='1'
         if blind or deaf:

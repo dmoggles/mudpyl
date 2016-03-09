@@ -168,6 +168,8 @@ class MudProcessor(LineReceiver):
             self.triggers.sort(key = attrgetter("sequence"))
             self.gmcp_events.sort(key = attrgetter("sequence"))
             self.aliases.sort(key = attrgetter("sequence"))
+        
+        self.debug(str(self.triggers[0]))
         return robmod
     
     def registerEventHandler(self, eventName, eventHandler):

@@ -100,7 +100,7 @@ class ImperianModule(BaseModule):
     def bleeding(self, match, realm):
         bleed=int(match.group(1))
         realm.root.set_state('bleed',bleed)
-        realm.root.fireEvent('selfStatUpdateEvent','bleeding',bleed)
+        realm.root.fireEvent('selfStatUpdateEvent','bleed',bleed)
             
                   
         

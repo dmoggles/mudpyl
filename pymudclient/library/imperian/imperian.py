@@ -14,21 +14,11 @@ import json
 import re
 from pymudclient.gmcp_events import binding_gmcp_event
 from pymudclient.net.gmcp import GmcpHandler
+from pymudclient.colours import ORANGE
+from pymudclient.library.imperian.people_services import PeopleServices
+from pymudclient.library.imperian.char_data import get_char_data
 
-def get_char_data( name):
-        
-    r=requests.get('http://api.imperian.com/characters/%s.json'%name.lower())
-    
-    if not r.status_code == 200:
-        return None
-    else:
-        d=json.loads(r.text)
-        description = d['description']
-        d1=description.split('.')[0]
-        statpack = re.match('(?:She|He) is (?:a|an) (\w+) (?:\w+)',d1).group(1)
-        d['statpack']=statpack
-        return d
-            
+
 class ImperianModule(BaseModule):
     '''
     classdocs
@@ -41,13 +31,16 @@ class ImperianModule(BaseModule):
         '''
         BaseModule.__init__(self, realm)
         self.map_mode=False
+        self.people_service = PeopleServices(realm)
+        self.player_tracker = PlayerTracker(realm, self.people_service)
         
     @property
     def aliases(self):
         return [self.show_gmcp, self.add_module,self.set_target,self.untar,
                 self.whois,
                 self.enemy,
-                self.qq]
+                self.qq, 
+                self.add_highlight]
     @property
     def triggers(self):
         return [self.on_map_header,
@@ -57,13 +50,20 @@ class ImperianModule(BaseModule):
     
     @property
     def modules(self):
-        return [PlayerTracker]
+        return [self.people_service,
+                self.player_tracker]
     
     @property
     def gmcp_events(self):
         return[self.vitals#, 
                #self.on_map_redirect
                ]
+    
+    @binding_alias('^add_highlight (\w+)$')
+    def add_highlight(self, match, realm):
+        name=match.group(1)
+        realm.root.add_highlight(name, ORANGE)
+        realm.root.debug(str(realm.root.triggers[-1]))
     
     @binding_alias('^qq$')
     def qq(self, match, realm):

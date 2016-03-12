@@ -6,7 +6,8 @@ from pymudclient.metaline import json_to_metaline, metaline_to_json, simpleml,\
 from twisted.internet.task import LoopingCall
 from operator import attrgetter
 from zope.interface.declarations import implementedBy
-from pymudclient.triggers import TriggerMatchingRealm, TriggerBlockMatchingRealm
+from pymudclient.triggers import TriggerMatchingRealm, TriggerBlockMatchingRealm,\
+    RegexTrigger
 from pymudclient.colours import fg_code, WHITE, bg_code, BLACK
 from pymudclient.aliases import AliasMatchingRealm
 import traceback
@@ -44,6 +45,7 @@ class MudProcessor(LineReceiver):
         self.connected=False
         self.name=''
         self.safe_to_send=True
+        self.highlights={}
         
         
     def heartbeat(self):
@@ -169,7 +171,6 @@ class MudProcessor(LineReceiver):
             self.gmcp_events.sort(key = attrgetter("sequence"))
             self.aliases.sort(key = attrgetter("sequence"))
         
-        self.debug(str(self.triggers[0]))
         return robmod
     
     def registerEventHandler(self, eventName, eventHandler):
@@ -278,6 +279,24 @@ class MudProcessor(LineReceiver):
         if self.tracing:
             self.write("TRACE: " + thunk())
             
+    
+    def add_highlight(self, highlight_text, highlight_color, bold=False):
+        def _color(match, realm):
+            start = 0
+            loc = realm.metaline.line.find(highlight_text, start)
+            while loc!=-1:
+                realm.alterer.change_fore(loc, loc + len(highlight_text), fg_code(highlight_color, bold))
+                start=loc+len(highlight_text)
+                loc = realm.metaline.line.find(highlight_text, start)
+            
+        new_trigger = RegexTrigger(highlight_text, _color)
+        self.triggers.append(new_trigger)
+        self.highlights[highlight_text]=new_trigger
+        
+    def remove_highlight(self, highlight_text):
+        if highlight_text in self.highlights:
+            self.triggers.remove(self.highlights[highlight_text])
+            del self.highlights[highlight_text]
             
 class TimerRealm(object):
 

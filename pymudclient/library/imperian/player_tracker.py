@@ -3,26 +3,27 @@ Created on Jul 29, 2015
 
 @author: dmitry
 '''
-from pymudclient.modules import BaseModule
+from pymudclient.modules import EarlyInitialisingModule
 from pymudclient.aliases import binding_alias
 from pymudclient.gmcp_events import binding_gmcp_event
 
-class PlayerTracker(BaseModule):
+class PlayerTracker(EarlyInitialisingModule):
     '''
     classdocs
     '''
 
 
-    def __init__(self, realm):
+    def __init__(self, realm, people_services):
         '''
         Constructor
         '''
-        BaseModule.__init__(self,realm)
+        self.realm = realm
         self.players=[]
         self.target=''
         self.manual_target=False
         self.friends=[]
         self.enemies=[]
+        self.people_services = people_services
         
     @property
     def aliases(self):
@@ -36,7 +37,7 @@ class PlayerTracker(BaseModule):
     def set_target_by_name(self, match, realm):
         realm.send_to_mud=False
         self.target = match.group(1)
-        realm.root.state['target']=self.target
+        realm.root.set_state('target',self.target)
         self.manual_target=True
         self.output_to_window(realm.root)
         
@@ -61,13 +62,11 @@ class PlayerTracker(BaseModule):
     @binding_gmcp_event('Room.Players')
     def on_room_players(self, gmcp_data, realm):
         self.players=[str(p['name']).lower() for p in gmcp_data]
+        for p in gmcp_data:
+            self.people_services.process_person(p['name'])
+            
         self.output_to_window(realm)
-        #if realm.root.gui:
-        #    target = realm.root.get_state("target").lower()
-        #    if target in self.players:
-        #        realm.root.gui.set_target_here(True)
-        #    else:
-        #        realm.root.gui.set_target_here(False)
+
             
         
     def output_to_window(self,realm):
@@ -78,6 +77,7 @@ class PlayerTracker(BaseModule):
         
     @binding_gmcp_event('Room.AddPlayer')
     def on_room_add_player(self, gmcp_data, realm):
+        self.people_services.process_person(str(gmcp_data['name']).lower())
         self.players.append(str(gmcp_data['name']).lower())
         self.output_to_window(realm)
         #change gui color
@@ -101,12 +101,18 @@ class PlayerTracker(BaseModule):
     def getPlayerWidgetStringHorizontal(self):
         output=''
         for i,p in enumerate(self.players):
+            circle = self.people_services.check_circle(p)
+            
             if p in self.enemies:
                 color='<red*>'
             elif p in self.friends:
                 color='<green*>'
             else:
-                color='<white*>'
+                temp_color = self.people_services.get_color(circle)
+                if temp_color == '':
+                    color = '<white*>'
+                else:
+                    color = '<%s>'%temp_color
             if p == self.target:
                 output+='<white*>%d. %s>%s< | '%(i+1, color, p)
             else:

@@ -51,7 +51,7 @@ class Deathknight(EarlyInitialisingModule):
     @property
     def aliases(self):
         return [self.bulwark, self.pk,self.auto_macro,
-                self.finish]
+                self.finish, self.rv]
     
     @property
     def triggers(self):
@@ -80,6 +80,8 @@ class Deathknight(EarlyInitialisingModule):
                 'C-q':'delayed pk',
                 '<F2>':'delayed finish',
                 'C-w':'delayed finish',
+                '<F3>':'delayed rv',
+        
                 '<F12>':'sh',
                 'C-e':'sh',
                 '<F11>':'queue eqbal bwind',
@@ -175,6 +177,17 @@ class Deathknight(EarlyInitialisingModule):
                                                'combo':combo}
         realm.send('queue eqbal %s'%combo)
     
+    @binding_alias('^rv')
+    def rv(self, match, realm):
+        realm.send_to_mud = False
+        self.combo_fired=True
+        target = realm.root.get_state('target')
+        parry = self.autoparry.evaluate_parry()
+        combo = self.combo_maker.get_reave(realm, target)
+        if parry!='':
+            combo='parry %(parry)s|%(combo)s'%{'parry':parry,
+                                               'combo':combo}
+        realm.send('queue eqbal %s'%combo)
     
     @binding_alias('^finish$')
     def finish(self, match, realm):

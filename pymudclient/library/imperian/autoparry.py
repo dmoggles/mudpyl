@@ -94,7 +94,11 @@ class Autoparry(EarlyInitialisingModule):
     def calc_guard(self):
         weights = {l:0 for l in limbs}
         for l in limbs:
-            part = self.limb_tracker['me'][l].partial
+            part = 0
+            if self.limb_tracker['me'][l].bruised:
+                part+=3
+            elif self.limb_tracker['me'][l].trembling:
+                part+=1
             if self.limb_tracker['me'][l].mangled:
                 part+=1
             elif self.limb_tracker['me'][l].damaged:

@@ -105,4 +105,34 @@ class DeathknightCombo(EarlyInitialisingModule):
         combo+='|engage %(target)s'%{'target':target}
         combo+='|trueassess %(target)s'%{'target':target}
         return combo
-            
+        
+    def get_reave(self, realm, target):    
+        tracker = self.tracker.tracker(target)
+        
+        combo = 'light pipes|enemy %(target)s|stand|order hound kill %(target)s'%{'target':target}
+        toxins = self.get_reave_toxins(tracker)
+        attack1='reave'
+        attack2='reave'
+        if self.shield_tracker[target].aura and self.shield_tracker[target].shield:
+            attack1='raze'
+            attack2='raze'
+        elif self.shield_tracker[target].aura or self.shield_tracker[target].shield:
+            old_attack1 = attack1
+            attack1='raze'
+            attack2='reave'
+        combo+='|quickdraw battleaxe shield'
+        combo+='|wm %(attack1)s %(attack2)s %(target)s %(toxin1)s %(toxin2)s'%{'attack1':attack1,
+                                                                               'attack2':attack2,
+                                                                               'target':target,
+                                                                               'toxin1':toxins[0],
+                                                                               'toxin2':toxins[1]}
+        combo+='|engage %(target)s'%{'target':target}
+        combo+='|soulstorm %(target)s'%{'target':target}
+        combo+='|trueassess %(target)s'%{'target':target}
+        return combo
+    
+    def get_reave_toxins(self, tracker):
+        if tracker['aconite'].on or tracker['botulinum'].on:
+            return ('strychnine','strychnine')
+        else:
+            return ('strychnine','aconite')

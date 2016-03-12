@@ -8,11 +8,12 @@ import csv
 import os
 import pango
 import time
-from pymudclient.library.imperian.imperian import get_char_data
+
 from pymudclient.gui.gui_elements import BlackEventBox, FormattedLabel,\
     BlackFrame, HpManaWidget, HpManaPanel, BleedPanel
     
 import pymudclient.gui.gui_elements as ge
+from pymudclient.library.imperian.char_data import get_char_data
 
 TREE_BALANCE=15
 PURGE_BALANCE=15

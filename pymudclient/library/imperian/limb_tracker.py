@@ -17,11 +17,22 @@ class Limb:
         self.mangled=False
         self.hits=0
         self.calculated_hits_to_break=0
+        self.confirmed_hits_to_break=0
+        
         
         
     def add_hit(self):
         self.hits+=1
         
+    @property 
+    def hits_left(self):
+        if self.confirmed_hits_to_break!=0:
+            return self.confirmed_hits_to_break-self.hits
+        else:
+            return self.calculated_hits_to_break-self.hits
+        
+    
+    
     @property
     def bruised(self):
         return self.partial==2
@@ -30,7 +41,15 @@ class Limb:
     def set_bruised(self):
         self.partial = 2
         self.calculated_hits_to_break = int(math.ceil(float(self.hits) / (2./3.0)))
-        
+    
+    @property
+    def full_damage(self):
+        if self.damaged:
+            return 1
+        if self.mangled:
+            return 2
+        return 0
+    
     @property
     def trembling(self):
         return self.partial==1
@@ -44,11 +63,13 @@ class Limb:
         
     def set_damaged(self):
         self.damaged=0
+        self.confirmed_hits_to_break=self.hits
         self.hits=0
         self.partial = 0
         
     def set_mangled(self):
-        self.manged=0
+        self.mangled=0
+        self.confirmed_hits_to_break=self.hits
         self.hits = 0
         self.partial = 0
     
@@ -166,4 +187,6 @@ class LimbTrack(EarlyInitialisingModule):
         lt = self.__getitem__(person)
         lt.set_target(limb)
         lt.add_hit(limb)
+        a_limb = lt[limb]
+        realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left)
     

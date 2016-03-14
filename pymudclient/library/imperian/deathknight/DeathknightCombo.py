@@ -121,7 +121,7 @@ class DeathknightCombo(EarlyInitialisingModule):
             attack1='raze'
             attack2='reave'
         combo+='|quickdraw battleaxe shield'
-        combo+='|wm %(attack1)s %(attack2)s %(target)s %(toxin1)s %(toxin2)s'%{'attack1':attack1,
+        combo+='|lns|wm %(attack1)s %(attack2)s %(target)s %(toxin1)s %(toxin2)s'%{'attack1':attack1,
                                                                                'attack2':attack2,
                                                                                'target':target,
                                                                                'toxin1':toxins[0],

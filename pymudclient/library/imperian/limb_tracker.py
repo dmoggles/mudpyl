@@ -29,7 +29,7 @@ class Limb:
         if self.confirmed_hits_to_break!=0:
             return self.confirmed_hits_to_break-self.hits
         else:
-            return self.calculated_hits_to_break-self.hits
+            return self.calculated_hits_to_break-self.hits - 1
         
     
     
@@ -60,15 +60,23 @@ class Limb:
         
     def reset_partial(self):
         self.partial = 0
-        
-    def set_damaged(self):
+        self.hits=0
+    
+    def set_healed(self):
         self.damaged=0
+        self.mangled = 0
+        self.hits=0
+        self.partial = 0
+
+    def set_damaged(self):
+        self.damaged=1
+        self.mangled = 0
         self.confirmed_hits_to_break=self.hits
         self.hits=0
         self.partial = 0
         
     def set_mangled(self):
-        self.mangled=0
+        self.mangled=1
         self.confirmed_hits_to_break=self.hits
         self.hits = 0
         self.partial = 0
@@ -88,14 +96,73 @@ class Person:
         
     def add_hit(self, limb):
         self.limbs[limb].add_hit()
-    
+        
+    def set_bruised(self, limb):
+        self.limbs[limb].set_bruised()
+        
+    def set_trembling(self, limb):
+        self.limbs[limb].set_trembling()
+        
+    def reset_partial(self, limb):
+        self.limbs[limb].reset_partial()
+        
+    def set_damaged(self, limb):
+        self.limbs[limb].set_damaged()
+        
+    def apply_salve(self, limb):
+        if limb=='head':
+            if self.limbs['head'].mangled:
+                self.limbs['head'].set_damaged()
+            else:
+                self.limbs['head'].set_healed()
+            return 'head'
+        if limb=='torso':
+            if self.limbs['torso'].mangled:
+                self.limbs['torso'].set_damaged()
+            else:
+                self.limbs['torso'].set_healed()
+            return 'torso'
+        if limb=='arms':
+            if self.limbs['left arm'].mangled:
+                self.limbs['left arm'].set_damaged()
+                healed_limb = 'left arm'
+            elif self.limbs['right arm'].mangled:
+                self.limbs['right arm'].set_damaged()
+                healed_limb = 'right arm'
+            elif self.limbs['left arm'].damaged:
+                self.limbs['left arm'].set_healed()
+                healed_limb = 'left arm'
+            else:
+                self.limbs['right arm'].set_healed()
+                healed_limb = 'right arm'
+            return healed_limb
+        if limb=='legs':
+            if self.limbs['left leg'].mangled:
+                self.limbs['left leg'].set_damaged()
+                healed_limb = 'left leg'
+            elif self.limbs['right leg'].mangled:
+                self.limbs['right leg'].set_damaged()
+                healed_limb = 'right leg'
+            elif self.limbs['left leg'].damaged:
+                self.limbs['left leg'].set_healed()
+                healed_limb = 'left leg'
+            else:
+                self.limbs['right leg'].set_healed()
+                healed_limb = 'right leg'
+            return healed_limb
     
 class LimbTrack(EarlyInitialisingModule):
     def __init__(self, realm):
         self.realm=realm
         self.persons={'me':Person('me')}
+        self.event_counter = 0
+        realm.registerEventHandler('setTargetEvent',self.on_target)
         
     def __getitem__(self, person):
+        person=person.lower()
+        #self.realm.debug('person requested: %s'%person)
+        #self.realm.debug('all people: %s'%str(self.persons.keys()))
+        
         if not person in self.persons:
             self.persons[person]=Person(person)
         return self.persons[person]
@@ -111,10 +178,29 @@ class LimbTrack(EarlyInitialisingModule):
                 self.self_heal_mangled,
                 self.dead,
                 self.set_parry,
-                self.capture_hack]
+                self.capture_hack,
+                self.capture_bruised,
+                self.capture_trembling,
+                self.capture_reset,
+                self.capture_damaged,
+                self.capture_damaged_torso,
+                self.capture_damaged_head,
+                self.apply_salve,
+                self.tendoncut]
     
     
     #self
+    
+    def on_target(self, target):
+        self.event_counter=0
+        
+    
+    def send_limb_status_event(self, realm, person, limb):
+        lt = self.__getitem__(person)
+        a_limb = lt[limb]
+        realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, self.event_counter)
+        self.event_counter+=1
+    
     
     @binding_trigger('^Your (.*) trembles slightly under the blow\.$')
     def self_trembles(self, match, realm):
@@ -180,13 +266,103 @@ class LimbTrack(EarlyInitialisingModule):
         
     #other
     
-    @binding_trigger("^You hack at (\w+)'s (\w+) with a gleaming scimitar\.$")
+    @binding_trigger("^You hack at (\w+)'s (.*) with a gleaming scimitar\.$")
     def capture_hack(self, match, realm):
+        self.did_hack=True
         limb = match.group(2)
         person = match.group(1)
         lt = self.__getitem__(person)
         lt.set_target(limb)
         lt.add_hit(limb)
         a_limb = lt[limb]
-        realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left)
+        realm.root.debug('hack %d'%a_limb.hits_left)
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'hack')
+        self.send_limb_status_event(realm, person, limb)
     
+    @binding_trigger("^You notice several bruises forming on (\w+)'s (.*)\.$")
+    def capture_bruised(self, match, realm):
+        limb = match.group(2)
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.set_bruised(limb)
+        a_limb = lt[limb]
+        realm.root.debug('damage %d'%(a_limb.full_damage*3+a_limb.partial))
+        
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'bruised')
+        self.send_limb_status_event(realm, person, limb)
+        
+    @binding_trigger("^(\w+)'s (.*) trembles slightly under the blow\.")
+    def capture_trembling(self, match, realm):
+        limb = match.group(2)
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.set_trembling(limb)
+        a_limb = lt[limb]
+        realm.root.debug('damage %d'%(a_limb.full_damage*3+a_limb.partial))
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'trembling')
+        self.send_limb_status_event(realm, person, limb)
+    
+        
+    @binding_trigger("^(\w+)'s (.*) looks healthier\.$")
+    def capture_reset(self, match, realm):
+        limb = match.group(2)
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.reset_partial(limb)
+        #a_limb = lt[limb]
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'reset')
+        self.send_limb_status_event(realm, person, limb)
+    
+    @binding_trigger("^(\w+)'s (.*) has been mutilated\.$")
+    def capture_damaged(self, match, realm):
+        realm.root.debug('damaged')
+        limb = match.group(2)
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.set_damaged(limb)
+        #a_limb = lt[limb]
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'damaged')
+        self.send_limb_status_event(realm, person, limb)
+        
+    @binding_trigger("^(\w+) suffers internal damage from your blow\.$")
+    def capture_damaged_torso(self, match, realm):
+        realm.root.debug('torso damaged')
+        
+        limb = 'torso'
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.set_damaged(limb)
+        #a_limb = lt[limb]
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'damaged')
+        self.send_limb_status_event(realm, person, limb)
+    
+    @binding_trigger("^(\w+)'s head is crushed under your blow\.$")
+    def capture_damaged_head(self, match, realm):
+        realm.root.debug('head damaged')
+        
+        limb = 'head'
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.set_damaged(limb)
+        #a_limb = lt[limb]
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'damaged')
+        self.send_limb_status_event(realm, person, limb)
+        
+    @binding_trigger("^(\w+) rubs some salve on (?:her|his) (legs|arms|head|torso)\.$")
+    def apply_salve(self, match, realm):
+        person = match.group(1)
+        limb = match.group(2)
+        lt = self.__getitem__(person)
+        limb_healed = lt.apply_salve(limb)
+        realm.root.debug('applied salve to %s'%limb_healed)
+        self.send_limb_status_event(realm, person, limb_healed)
+    
+    @binding_trigger("^You swing a gleaming scimitar at (\w+), calmly severing the tendons in (?:his|her) (.*)\.$")
+    def tendoncut(self, match, realm):
+        limb = match.group(2)
+        person = match.group(1)
+        lt = self.__getitem__(person)
+        lt.reset_partial(limb)
+        #a_limb = lt[limb]
+        #realm.root.fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left, 'reset')
+        self.send_limb_status_event(realm, person, limb)

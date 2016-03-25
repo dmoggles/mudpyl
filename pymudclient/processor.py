@@ -12,6 +12,7 @@ from pymudclient.colours import fg_code, WHITE, bg_code, BLACK
 from pymudclient.aliases import AliasMatchingRealm
 import traceback
 from pymudclient.tagged_ml_parser import taggedml
+from code import InteractiveConsole
 
 
 class MudProcessor(LineReceiver):
@@ -46,6 +47,9 @@ class MudProcessor(LineReceiver):
         self.name=''
         self.safe_to_send=True
         self.highlights={}
+        self.module_map={}
+        self.console_ns = {'processor': self}
+        self.console=InteractiveConsole(self.console_ns)
         
         
     def heartbeat(self):
@@ -152,6 +156,9 @@ class MudProcessor(LineReceiver):
             self.gmcp[gmcp_key]=gmcp_data
             for gmcp_event in self.gmcp_events:
                 gmcp_event(pair, self)
+        elif meth == 'do_debug':
+            comm = rest[0]
+            self.console.push('processor.debug(%s)'%comm)
         else:
             raise ValueError("bad line: %s" % line)
         #self.transport.write(json.dumps(["ack", [meth,rest]]) + "\n")

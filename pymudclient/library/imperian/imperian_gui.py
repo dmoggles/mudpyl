@@ -10,7 +10,7 @@ import pango
 import time
 
 from pymudclient.gui.gui_elements import BlackEventBox, FormattedLabel,\
-    BlackFrame, HpManaWidget, HpManaPanel, BleedPanel
+    BlackFrame, HpManaWidget, HpManaPanel, BleedPanel, LimbDamagePanel
     
 import pymudclient.gui.gui_elements as ge
 from pymudclient.library.imperian.char_data import get_char_data
@@ -394,55 +394,7 @@ class CharDataPanel(BlackEventBox):
             self.elements['statpack'].set_value(data['statpack'])
             
 
-class LimbDamageLabel(BlackEventBox):
-    def __init__(self, limb_name):
-        BlackEventBox.__init__(self)
-        self.limb_name = limb_name
-        self.title_label = FormattedLabel(limb_name)
-        self.data_label = FormattedLabel('')
-        self.damage=0
-        self.hits_left=0
-        self.confirmed_damage=0
-        self.hits =0
-        f=BlackFrame('')
-        self.add(f)
-        t=gtk.Table(rows=1, columns=3, homogeneous=True)
-        f.add(t)
-        t.attach(self.title_label, bottom_attach=1, top_attach=0, left_attach=0, right_attach=1)
-        t.attach(self.data_label, bottom_attach=1, top_attach=0, left_attach=1, right_attach=3)
-        self.update(self.damage, self.hits_left, self.confirmed_damage, self.hits)
-        
-        
-    def update(self, damage, hits_left, confirmed_damage, hits):
-        self.damage=damage
-        self.hits_left=hits_left
-        self.confirmed_damage=confirmed_damage
-        t={0:'Non',0.33:'Hrt',0.66:'Inj'}
-        c={0:ge.OFF_WHITE, 0.33:ge.YELLOW, 0.66:ge.ORANGE}
-        self.data_label.set_text('%s: %d/%d %.2f'%(t[self.confirmed_damage],hits, hits_left,damage))
-        self.data_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(c[confirmed_damage]))
-        
-        
-class LimbDamagePanel(BlackEventBox):
-    def __init__(self):
-        BlackEventBox.__init__(self)
-        f = BlackFrame('Limbs')
-        self.add(f)
-        t = gtk.Table(rows=3, columns=2, homogeneous=True)
-        f.add(t)
-        self.limbs = {'head':LimbDamageLabel('Head'),
-                      'torso':LimbDamageLabel('Torso'),
-                      'left arm':LimbDamageLabel('Left Arm'),
-                      'right arm':LimbDamageLabel('Right Arm'),
-                      'left leg':LimbDamageLabel('Left Leg'),
-                      'right leg':LimbDamageLabel('Right Leg')}
-        l=['head','torso','left arm','right arm','left leg','right leg']
-        for i,k in enumerate(l):
-            t.attach(self.limbs[k], top_attach=i/2, bottom_attach=i/2+1, left_attach=i%2, right_attach=i%2+1)
-            
-    def __getitem__(self, k):
-        return self.limbs[k] if k in self.limbs else None
-        
+
 class EnemyPanel(BlackEventBox):
     def __init__(self, client):
         BlackEventBox.__init__(self)
@@ -464,7 +416,7 @@ class EnemyPanel(BlackEventBox):
         box.pack_start(self.shield, expand=False)
         self.hp_mana = HpManaPanel("Target", client)
         box.pack_start(self.hp_mana, expand=False)
-        self.limb_panel=LimbDamagePanel()
+        self.limb_panel=LimbDamagePanel(client)
         box.pack_start(self.limb_panel, expand=False)
         
     def set_target_here(self, is_here):

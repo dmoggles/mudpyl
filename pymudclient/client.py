@@ -134,8 +134,16 @@ class ClientProtocol(ProcessProtocol, LineReceiver):
         if not self.messages_not_acknowledged:
             self.client_started_processing_at = time.time()
         self.messages_not_acknowledged += 1 
+    
+    def do_debug(self, comm):
+        self.send_to_client('do_debug', comm)
+        if not self.messages_not_acknowledged:
+            self.client_started_processing_at = time.time()
+        self.messages_not_acknowledged += 1
+        
         
     def do_block(self, block):
+        print('debugging')
         self.send_to_client('do_block', [json.dumps([metaline_to_json(l) for l in block])])
         if not self.messages_not_acknowledged:
             self.client_started_processing_at = time.time()
@@ -273,7 +281,10 @@ class Connector:
             message = "Client reloaded!"
         self.client = client
         self.write(simpleml(message, colour))
-        
+     
+    def debug(self, comm):
+        self.client.do_debug(comm)
+           
     def reload_client(self):
         c = ClientProtocol(self)
         from twisted.internet import reactor

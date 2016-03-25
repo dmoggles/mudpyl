@@ -322,4 +322,72 @@ class BleedPanel(BlackEventBox):
     def set_current(self, value):
         self.current=value
         self.update()
+        
+class LimbDamageLabel(BlackEventBox):
+    def __init__(self, limb_name):
+        BlackEventBox.__init__(self)
+        self.limb_name = limb_name
+        self.title_label = FormattedLabel(limb_name)
+        self.data_label = FormattedLabel('')
+        self.damage=0
+        self.hits_left=0
+        f=BlackFrame('')
+        self.add(f)
+        t=gtk.Table(rows=1, columns=3, homogeneous=True)
+        f.add(t)
+        t.attach(self.title_label, bottom_attach=1, top_attach=0, left_attach=0, right_attach=1)
+        t.attach(self.data_label, bottom_attach=1, top_attach=0, left_attach=1, right_attach=3)
+        self.update(self.damage, self.hits_left)
+        
+        
+    def update(self, damage, hits_left):
+        self.damage=damage
+        self.hits_left=hits_left
+        t={0:'Non',1:'Tre',2:'Bru',3:'Dmg',4:'+T+',5:'+B+',6:'Mng'}
+        c={0:OFF_WHITE, 1:YELLOW, 2:ORANGE, 3:RED, 4:RED, 5:RED, 6:RED}
+        self.data_label.set_text('%s: %d'%(t[damage],hits_left))
+        self.data_label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(c[damage]))
+        
+        
+class LimbDamagePanel(BlackEventBox):
+    def __init__(self, realm):
+        BlackEventBox.__init__(self)
+        f = BlackFrame('Limbs')
+        self.add(f)
+        t = gtk.Table(rows=3, columns=2, homogeneous=True)
+        f.add(t)
+        self.limbs = {'head':LimbDamageLabel('Head'),
+                      'torso':LimbDamageLabel('Torso'),
+                      'left arm':LimbDamageLabel('Left Arm'),
+                      'right arm':LimbDamageLabel('Right Arm'),
+                      'left leg':LimbDamageLabel('Left Leg'),
+                      'right leg':LimbDamageLabel('Right Leg')}
+        l=['head','torso','left arm','right arm','left leg','right leg']
+        for i,k in enumerate(l):
+            t.attach(self.limbs[k], top_attach=i/2, bottom_attach=i/2+1, left_attach=i%2, right_attach=i%2+1)
+        self.target = 'None'
+        self.update_counter=0
+        
+        realm.registerEventHandler('setTargetEvent', self.changeTarget)
+        realm.registerEventHandler('limbStatusEvent', self.updateLimb)
+        
+    def changeTarget(self, target):
+        self.target=target
+        self.update_counter=0
+    
+    #fireEvent('limbStatusEvent', person, limb, a_limb.full_damage, a_limb.partial, a_limb.hits, a_limb.hits_left)
+    def updateLimb(self, person, limb, full_damage, partial_damage, hits, hits_left, counter):
+        if not self.target.lower()==person.lower():
+            return
+        if counter < self.update_counter:
+            return
+        self.update_counter = counter
+        damage = full_damage*3+partial_damage
+        print('updateLimb damage: %d (%s)'%(damage, counter))
+        if limb in self.limbs:
+            self.limbs[limb].update(damage, hits_left)
+            
+    def __getitem__(self, k):
+        return self.limbs[k] if k in self.limbs else None
+        
             

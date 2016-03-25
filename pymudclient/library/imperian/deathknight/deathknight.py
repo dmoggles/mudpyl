@@ -17,6 +17,8 @@ def shield_handler(realm, shield_status):
         
         realm.send('fc')
 
+
+limb_priority=['torso','head','left leg','right arm','right leg','right arm']
 class Deathknight(EarlyInitialisingModule):
     '''
     classdocs
@@ -24,8 +26,8 @@ class Deathknight(EarlyInitialisingModule):
 
 
     def __init__(self, realm, communicator, aff_tracker, shield_track,
-                 light, infused, draining, finisher,
-                 autoparry):
+                 weapons,
+                 autoparry, limb_trackers):
         self.aff_tracker = aff_tracker
         self.communicator =communicator
         self.aff_tracker.apply_priorities([('haemophilia',1)])
@@ -42,16 +44,22 @@ class Deathknight(EarlyInitialisingModule):
         self.combo_fired = False
         self.autoparry = autoparry
         self.realm.registerEventHandler('setTargetEvent', self.on_target_set)
-        self.combo_maker = DeathknightCombo(light, infused, draining, finisher, aff_tracker, shield_track)
+        self.combo_maker = DeathknightCombo(weapons, aff_tracker, shield_track, limb_trackers)
     
     @property
     def modules(self):
-        return [WeaponMasteryCommands]
+        return [WeaponMasteryCommands, self.combo_maker]
     
     @property
     def aliases(self):
-        return [self.bulwark, self.pk,self.auto_macro,
-                self.finish, self.rv]
+        return [self.bulwark, self.pk, self.pk_solo, self.auto_macro,
+                self.finish, 
+                self.rv, 
+                self.prep, 
+                self.break_it, 
+                self.tendoncut, 
+                self.seal,
+                self.seal2]
     
     @property
     def triggers(self):
@@ -66,6 +74,7 @@ class Deathknight(EarlyInitialisingModule):
                 self.slash_attack,
                 self.lacerate_attack,
                 self.shred_attack,
+                self.hack_attack,
                 self.toxin_hit,
                 self.on_prompt,
                 self.engage,
@@ -81,7 +90,8 @@ class Deathknight(EarlyInitialisingModule):
                 '<F2>':'delayed finish',
                 'C-w':'delayed finish',
                 '<F3>':'delayed rv',
-        
+                '<F4>':'delayed pks',
+                'C-a':'delayed pks',
                 '<F12>':'sh',
                 'C-e':'sh',
                 '<F11>':'queue eqbal bwind',
@@ -176,7 +186,53 @@ class Deathknight(EarlyInitialisingModule):
             combo='parry %(parry)s|%(combo)s'%{'parry':parry,
                                                'combo':combo}
         realm.send('queue eqbal %s'%combo)
+        
+    @binding_alias('^pks$')
+    def pk_solo(self, match, realm):
+        realm.send_to_mud = False
+        self.combo_fired=True
+        target = realm.root.get_state('target')
+        parry = self.autoparry.evaluate_parry()
+        combo = self.combo_maker.get_solo_combo(realm, target)
+        if parry!='':
+            combo='parry %(parry)s|%(combo)s'%{'parry':parry,
+                                               'combo':combo}
+        realm.send('queue eqbal %s'%combo)
     
+    @binding_alias('^prep$')
+    def prep(self, match, realm):
+        realm.send_to_mud = False
+        target = realm.root.get_state('target')
+        parry = self.autoparry.evaluate_parry()
+        combo = self.combo_maker.prep_limb(realm, target, limb_priority)
+        if parry!='':
+            combo='parry %(parry)s|%(combo)s'%{'parry':parry,
+                                               'combo':combo}
+        realm.send('queue eqbal %s'%combo)
+    
+    @binding_alias('^prep1$')
+    def break_it(self, match, realm):
+        target = realm.root.get_state('target')
+        
+        realm.send('queue eqbal target head|displace nothing|wm hack hack %s butisol hemotoxin'%target)
+     
+    @binding_alias('^prep2$')
+    def tendoncut(self, match, realm):
+        target = realm.root.get_state('target')
+        
+        realm.send('queue eqbal target nothing|wm tendoncut slash %s torso bromine'%target)
+        
+    @binding_alias('^prep3$')
+    def seal(self, match, realm):
+        target = realm.root.get_state('target')
+        
+        realm.send('queue eqbal quickdraw sabre|wm slash slash %s iodine mercury'%target)
+    @binding_alias('^prep4$')
+    def seal2(self, match, realm):
+        target = realm.root.get_state('target')
+        
+        realm.send('queue eqbal quickdraw sabre|wm slash slash %s hemotoxin ciguatoxin'%target)
+      
     @binding_alias('^rv')
     def rv(self, match, realm):
         realm.send_to_mud = False
@@ -281,9 +337,13 @@ class Deathknight(EarlyInitialisingModule):
     def lacerate_attack(self, match, realm):
         self.single_attack(match.group(1), 'Lacerate', realm)
         
-    @binding_trigger("You shred (\w+)'s skin viciously with (?:a|an) .*, causing a nasty infection.")
+    @binding_trigger("^You shred (\w+)'s skin viciously with (?:a|an) .*, causing a nasty infection.")
     def shred_attack(self, match, realm):
         self.single_attack(match.group(1), "Shred", realm)
+        
+    @binding_trigger("^You hack at (\w+)'s (\w+) with a gleaming scimitar\.$")
+    def hack_attack(self, match, realm):
+        self.single_attack(match.group(1), 'Hack (%s)'%match.group(2), realm)
         
     def single_attack(self, target, attack, realm):
         if not self.post_combo:
@@ -322,6 +382,10 @@ class Deathknight(EarlyInitialisingModule):
         if self.post_combo:
             self.combo_fired=False
             realm.cwrite(self.build_output())
+            target = realm.root.get_state('target')
+            tracker = self.aff_tracker.tracker(target)
+            realm.cwrite('<red*:yellow>COOLDOWNS: TREE %(tree)d, PURGE %(purge)d'%{'tree':tracker.time_to_next_tree(),
+                                                                                   'purge':tracker.time_to_next_purge()})
             self.display_data={}
             self.display_attack_counter=-1
      
@@ -371,6 +435,8 @@ class Deathknight(EarlyInitialisingModule):
                 output+='cyan*>'
             elif data['attack']=='Raze':
                 output+='white*>'
+            elif data['attack'].startswith('Hack'):
+                output+='brown*>'
             output+='%10s<white>'%data['attack']
             if 'toxin' in data:
                 output+=' Toxin: <green*> %15s'%data['toxin']

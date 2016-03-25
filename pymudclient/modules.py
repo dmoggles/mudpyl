@@ -24,6 +24,7 @@ class BaseModule(object):
 
     def __init__(self, manager):
         self.manager = manager
+        self.manager.module_map[self.__class__.__name__]=self
         manager.triggers.extend(self.triggers)
         manager.aliases.extend(self.aliases)
         manager.macros.update(self.macros)

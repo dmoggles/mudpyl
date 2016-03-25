@@ -31,8 +31,7 @@ class ImperianModule(BaseModule):
         '''
         BaseModule.__init__(self, realm)
         self.map_mode=False
-        self.people_service = PeopleServices(realm)
-        self.player_tracker = PlayerTracker(realm, self.people_service)
+        
         
     @property
     def aliases(self):
@@ -50,8 +49,7 @@ class ImperianModule(BaseModule):
     
     @property
     def modules(self):
-        return [self.people_service,
-                self.player_tracker]
+        return []
     
     @property
     def gmcp_events(self):
@@ -167,7 +165,12 @@ class ImperianModule(BaseModule):
         #              RunLengthList([(0,bg_code(BLACK))]))
         ml = taggedml('<cyan*:black>Target set: <red*>%s'%my_target)                                                    
         realm.write(ml)
+        data = get_char_data(my_target.lower())
         realm.root.set_state('target',my_target)
+        if 'profession' in data:
+            realm.root.set_state('target_prof',data['profession'])
+        else:
+            realm.root.set_state('target_prof', '')
         #realm.root.gui.set_target(my_target)
         realm.root.fireEvent('setTargetEvent',my_target.lower())
         realm.send_to_mud=False  

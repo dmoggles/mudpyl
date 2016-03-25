@@ -34,6 +34,27 @@ profession_map={'deathknight':'demonic',
                 'outrider':'antimagick',
                 'amazon':'antimagick'}
 
+damage_map={'physical':['berserker',
+                        'templar',
+                        'ranger',
+                        'amazon',
+                        'monk',
+                        'assassin',
+                        'deathknight',
+                        'defiler',
+                        'druid',
+                        'outrider',
+                        'predator',
+                        'priest',
+                        'renegade',
+                        'runeguard'],
+            'mental':['hunter',
+                      'mage',
+                      'bard',
+                      'diabolist',
+                      'summoner',
+                      'wytch']}
+
 config_category='people_services'
 circle_db_file='circle_db'
 people_db_file='people_db'
@@ -50,7 +71,8 @@ class PeopleServices(EarlyInitialisingModule):
         for person in self.people_db:
             data = self.people_db[person]
             if not person.capitalize() in self.realm.highlights:
-                self.realm.add_highlight(person.capitalize(), self.get_color_tag(profession_map[data['profession'].lower()]), True)
+                if 'profession' in data and data['profession'] in profession_map:
+                    self.realm.add_highlight(person.capitalize(), self.get_color_tag(profession_map[data['profession'].lower()]), True)
          
         
         
@@ -114,6 +136,8 @@ class PeopleServices(EarlyInitialisingModule):
     def process_person(self, person):
         data = get_char_data(person)
         self.people_db[data['name'].lower()]=data
+        if not 'profession' in data or data['profession']==u'':
+            return
         self.circle_db[profession_map[data['profession'].lower()]][data['name'].lower()]=data
         if not person in self.realm.highlights:
             self.realm.add_highlight(person, self.get_color_tag(profession_map[data['profession'].lower()]), True)

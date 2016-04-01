@@ -285,11 +285,13 @@ class Connector:
     def debug(self, comm):
         self.client.do_debug(comm)
            
-    def reload_client(self):
+    def reload_client(self, module = None):
+        if module == None:
+            module = self.mod.modules[0]
         c = ClientProtocol(self)
         from twisted.internet import reactor
         #reactor.spawnProcess(c, self.mod.executable_path)
-        spawnProcessHelper.spawnProcess(c, self.processor_exec, self.module_name)
+        spawnProcessHelper.spawnProcess(c, self.processor_exec, module)
         
         
     def metalineReceived(self, metaline, display_line = True):

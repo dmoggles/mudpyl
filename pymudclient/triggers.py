@@ -8,6 +8,7 @@ from pymudclient.metaline import iadjust
 from pymudclient.aliases import AliasMatchingRealm
 import re
 from pymudclient.tagged_ml_parser import taggedml
+import time
 
 class RegexTrigger(ProtoMatcher):
     """A single trigger, that matches simply on a regex."""
@@ -133,12 +134,17 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
     def process(self):
         """Do our main thing."""
         channels=[]
+        f = open(r'c:\temp\debug_pymudclient.txt','w')
+        f.write("# of triggers: %d\n"%len(self.root.triggers))
+        f.write("# of lines: %d\n"%len(self.block))
+        t0 = time.clock()
         for ml in self.block:
-            self._match_generic(ml, self.root.triggers)
+            self._match_generic(ml, self.root.triggers,f)
             '''triggers can set a different channel to write the text to, and we need to respect that'''
             channels.append(self.root.active_channels)
             self.line_index+=1
-            
+        t1 = time.clock()
+        f.write('Total Process: '+str(t1-t0)+'\n')    
         #for module in self.root.modules:
         #    module.on_prompt(self)
         for indx, alterer in enumerate(self.alterers):
@@ -148,7 +154,10 @@ class TriggerBlockMatchingRealm(BaseMatchingRealm):
             if self.display_lines[indx] and self.display_group:
                 self.parent.write(metaline)
             self._write_after(indx)
-          
+        t2 = time.clock()
+        f.write('Total Post Process: '+str(t2-t1)+'\n')
+        f.close()  
+        
     def _write_after(self, indx):
         """Write everything we've been waiting to."""
         writing_after_indx=[(line, sls) for (line, i, sls) in self._writing_after if i == indx]

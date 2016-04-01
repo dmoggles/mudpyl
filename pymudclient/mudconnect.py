@@ -1,11 +1,19 @@
 #!/usr/bin/python
 """Connand-line script to hook you up to the MUD of your choice."""
-from pymudclient.net.telnet import TelnetClientFactory
-from pymudclient.modules import load_file
-from pymudclient import __version__
-import argparse
-from pymudclient.library.imperian.imperian_gui import ImperianGui
+#import pygtkcompat
+#pygtkcompat.enable()
+#pygtkcompat.enable_gtk()
 
+
+import argparse
+from pymudclient.client import Connector, ClientProtocol
+from pymudclient import __version__, spawnProcessHelper
+from pymudclient.library.imperian.imperian_gui import ImperianGui
+import os
+import sys
+from twisted.python import filepath
+
+from twisted.internet import stdio
 parser = argparse.ArgumentParser(version = "%(prog)s " + __version__, 
                                  prog = 'pymudclient')
 
@@ -13,54 +21,67 @@ known_guis = ['gtk']
 gui_help = ("The GUI to use. Available options: %s. Default: %%(default)s" %
                      ', '.join(known_guis))
 
+
+known_gui_modes = ['simple','enhanced']
+gui_mode_help = 'Gui Modes: simple - basic GUI.  enhanced - extra control buttons'
+
+
 parser.add_argument('-g', '--gui', default = 'gtk', help = gui_help,
                     choices = known_guis)
-parser.add_argument('-d','--directory', help="Module directory", dest='module_directory', default="",type=str)
-parser.add_argument('-s','--settings', help='Settings directory', dest='settings_directory',default='',type=str)
-parser.add_argument("modulename", help = "The module to import")
+parser.add_argument('-m', '--gui_mode', default = 'simple',help=gui_mode_help,
+                    choices = known_gui_modes)
+parser.add_argument('-p', '--processor', help = 'Path to Processor executable', required = True)
+parser.add_argument("profile", help = "The profile to import")
 parser.add_argument("--profile", action = "store_true",  default = False,
                     help = "Whether to profile exection. Default: False")
 
-def main():   
+
+
+
+
+
+        
+         
+def main():
     """Launch the client.
 
     This is the main entry point. This will first initialise the GUI, then
     load the main module specified on the command line.
     """
-    
     options = parser.parse_args()
-    if options.module_directory != "":
-        directory = options.module_directory
-        import sys
-        sys.path.append(directory)
-    if options.gui == 'gtk':
-        from twisted.internet import gtk2reactor
-        gtk2reactor.install()
-    
-    from twisted.internet import reactor    
-    modclass = load_file(options.modulename)
-    factory = TelnetClientFactory(modclass.name, modclass.encoding, 
-                                  options.modulename, reactor)
+    subenv = dict(os.environ)
+    mod = __import__(options.profile, fromlist = ["name", "host", "port", "configure", "encoding",
+                                                     "gmcp_handshakes", "gui_configure",
+                                                     "use_blocks", "modules"])
+
+    realm = Connector(mod)
 
     if options.gui == 'gtk':
+        if hasattr(mod, 'gui_configure'):
+            mod.gui_configure(realm)
+        
         from pymudclient.gui.gtkgui import configure
-        factory.realm.gui = ImperianGui(factory.realm)
-
-    configure(factory)
-    factory.realm.module_settings_dir=options.settings_directory
-    modinstance = factory.realm.load_module(modclass)
-    factory.realm.gmcp_handler = modinstance.gmcp_handler
     
+    realm.processor_exec = options.processor
+    realm.module_name = options.profile
+    
+    configure(realm, options.gui_mode)
 
-    modinstance.is_main(factory.realm)
-
-    from twisted.internet import reactor
+    
 
     #pylint kicks up a major fuss about these lines, but that's because 
     #Twisted does some hackery with the reactor namespace.
     #pylint: disable-msg=E1101
 
-    reactor.connectTCP(modclass.host, modclass.port, factory)
+    if hasattr(mod, "configure"):
+        mod.configure(realm)
+
+    realm.client = ClientProtocol(realm)
+    from twisted.internet import reactor
+    realm.reactor = reactor
+    module_to_load = mod.modules[0]
+    print('mod to load '+module_to_load)
+    sp = reactor.callWhenRunning(spawnProcessHelper.spawnProcess, realm.client, realm.processor_exec, module_to_load)
     if not options.profile:
         reactor.run()
     else:

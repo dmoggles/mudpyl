@@ -145,11 +145,21 @@ class GUI(gtk.Window):
         if self.mode == 'enhanced':
             bbox = gtk.HButtonBox()
             bbox.set_spacing(5)
+            self.module_combo_box = gtk.combo_box_entry_new_text()
+            self.module_combo_box.connect('focus-in-event', self.command_line.grab_focus)    
+            
+            for m in self.realm.mod.modules:
+                self.module_combo_box.append_text(m)
+            reload_button = gtk.Button('Load')
+            reload_button.connect('clicked', self.reload_profile)
+            reload_button.connect('focus-in-event', self.got_focus_cb)    
+                
             split_button = BetterToggleButton(label='Split', depressed_label='Unsplit',
                                               color = gui_elements.GREEN, method=self.output_window.toggle_pause, gui=self, xsize = 50)
             system_on = BetterToggleButton(label='Processing', depressed_label='Processing',
                                               color = gui_elements.GREEN, method=self.realm.set_bypass, gui=self, xsize = 50)
-            
+            bbox.pack_end(self.module_combo_box)
+            bbox.pack_end(reload_button)
             bbox.pack_end(split_button)
             bbox.pack_end(system_on)
             labelbox.pack_end(bbox, expand=False)
@@ -210,7 +220,15 @@ class GUI(gtk.Window):
         self.widgets={'map':self.map}
 
         self.show_all()
-
+        
+        
+    def reload_profile(self,  widget):
+        module = self.module_combo_box.get_active_text()
+        self.realm.reload_client(module)
+        
+    def got_focus_cb(self, widget, event):
+        self.command_line.grab_focus()
+        
     def destroy_cb(self, widget, data = None):
         """Close everything down."""
         try:

@@ -6,7 +6,7 @@ using decorators around functions.
 import re
 import traceback
 from tagged_ml_parser import taggedml
-
+import time
 
 class ProtoMatcher(object):
     """Common code to triggers and aliases.
@@ -162,7 +162,7 @@ class BaseMatchingRealm(object):
         self.parent.safe_send(line, echo)
         
 
-    def _match_generic(self, line, matchers):
+    def _match_generic(self, line, matchers,f=None):
         """Test each matcher against the given line, and run the functions
         of those that match.
 
@@ -170,10 +170,19 @@ class BaseMatchingRealm(object):
         the commonality of their APIs.
         """
         for matcher in matchers:
+            if not f == None:
+                f.write(str(matcher.regex))
+                f.write('\n')
+            t0 = time.clock()
             matches = matcher.match(line)
+            t1=  time.clock()
             for match in matches:
                 matcher(match, self)
-                    
+            t2= time.clock()
+            
+            if not f == None:
+                f.write('Matching time: ' + str(t1-t0) + '\n')
+                f.write('Running time: ' + str(t2-t1) + '\n')
     
     def fireEvent(self, eventName, *args):
         self.parent.fireEvent(eventName, *args)

@@ -5,6 +5,7 @@ Created on Nov 8, 2015
 '''
 from pymudclient.modules import BaseModule
 from pymudclient.triggers import binding_trigger
+from pymudclient.tagged_ml_parser import taggedml
 
 class ImperianPrompt(BaseModule):
     '''
@@ -32,7 +33,7 @@ class ImperianPrompt(BaseModule):
     #gotta find a better way to trigger on prompt
     @binding_trigger('^H:\d+ M:\d+')
     def prompt_trigger(self, match, realm):
-        realm.display_line=False
+        #realm.display_line=False
         
         new_prompt=''
         
@@ -94,7 +95,8 @@ class ImperianPrompt(BaseModule):
         
         new_prompt+= "<white>]"
         
-        realm.cwrite(new_prompt)
+        realm.alterer.delete(0, len(realm.metaline.line))
+        realm.alterer.insert_metaline(0, taggedml(new_prompt))
         
         
         

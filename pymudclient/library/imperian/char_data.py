@@ -19,8 +19,8 @@ def get_char_data( name):
         else:
             d=json.loads(r.text)
             description = d['description']
-            d1=description.split('.')[0]
-            statpack = re.match('(?:She|He) is (?:a|an) (\w+) (?:\w+)',d1).group(1)
+            d1=description.split('.')[0]+'.'
+            statpack = re.match('(?:She|He) is (?:a|an)(?:.*)? (\w+) (?:\w+)\.',d1).group(1)
             d['statpack']=statpack
             char_data[name.lower()]=d
             return d

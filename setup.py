@@ -22,7 +22,7 @@ setup(name = "pymudclient",
           "Topic :: Terminals :: Telnet"
           ],
       license = 'GNU GPL v2 or later',
-      install_requires = ['Twisted', 'argparse', 'ordereddict','requests','accessible_output'],
+      install_requires = ['Twisted', 'argparse', 'ordereddict','requests','accessible_output','twilio'],
       extras_require = {'rifttracker': ['peak.util.extremes'],
                         'gtkgui': ['pygtk']
                         },

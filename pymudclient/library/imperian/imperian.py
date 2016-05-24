@@ -19,6 +19,7 @@ from pymudclient.library.imperian.people_services import PeopleServices
 from pymudclient.library.imperian.char_data import get_char_data
 
 
+
 class ImperianModule(BaseModule):
     '''
     classdocs

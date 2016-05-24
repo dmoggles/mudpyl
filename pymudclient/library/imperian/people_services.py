@@ -68,12 +68,12 @@ class PeopleServices(EarlyInitialisingModule):
             self.circle_db={'antimagick':{}, 'magick':{}, 'demonic':{}}
         self.who_state = 'none'
         self.realm=realm
-        for person in self.people_db:
-            data = self.people_db[person]
-            if not person.capitalize() in self.realm.highlights:
-                if 'profession' in data and data['profession'] in profession_map:
-                    self.realm.add_highlight(person.capitalize(), self.get_color_tag(profession_map[data['profession'].lower()]), True)
-         
+#         for person in self.people_db:
+#             data = self.people_db[person]
+#             if not person.capitalize() in self.realm.highlights:
+#                 if 'profession' in data and data['profession'] in profession_map:
+#                     self.realm.add_highlight(person.capitalize(), self.get_color_tag(profession_map[data['profession'].lower()]), True)
+#          
         
         
     
